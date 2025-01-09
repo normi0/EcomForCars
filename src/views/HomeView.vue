@@ -139,451 +139,463 @@
           </div>
 
           <!-- Theme Toggle -->
-          <button
-            @click="toggleTheme"
-            class="p-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <!-- Sun icon -->
-            <svg
-              v-if="isDark"
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-            <!-- Moon icon -->
-            <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-              />
-            </svg>
-          </button>
+          <ThemeToggle />
 
-          <!-- Filter Button -->
-          <button
-            @click="showFilterModal = true"
-            class="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center"
-          >
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            Filter
-          </button>
+          <!-- Filter and Sort Buttons -->
+          <div class="fixed top-20 right-4 flex gap-2 z-40">
+            <!-- Sort Button -->
+            <div class="relative">
+              <button
+                @click="showSortMenu = !showSortMenu"
+                class="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow flex items-center gap-2"
+              >
+                <span class="text-gray-700 dark:text-gray-300">Sort by</span>
+                <svg
+                  class="w-4 h-4 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
 
-          <!-- Sort Dropdown -->
-          <div class="relative">
+              <!-- Sort Menu -->
+              <div
+                v-if="showSortMenu"
+                class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2"
+              >
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  @click="sortProducts(option.value)"
+                  class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Button -->
             <button
-              @click="showSortDropdown = !showSortDropdown"
-              class="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center"
+              @click="showFilterModal = true"
+              class="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow flex items-center gap-2"
             >
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span class="text-gray-700 dark:text-gray-300">Filter</span>
+              <svg
+                class="w-4 h-4 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
                 />
               </svg>
-              Sort
             </button>
-
-            <div
-              v-if="showSortDropdown"
-              class="absolute right-0 top-12 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2"
-            >
-              <button
-                v-for="option in sortOptions"
-                :key="option.value"
-                @click="sort(option.value)"
-                class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                {{ option.label }}
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- Content Wrapper with padding to account for fixed navbar -->
-    <div class="pt-20">
-      <!-- Filter Modal -->
-      <div
-        v-if="showFilterModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      >
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Filter Products</h3>
+    <!-- Only spacing -->
+    <div class="mt-24"></div>
 
-          <!-- Product Name -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Product Name</label
-            >
-            <input
-              v-model="filters.name"
-              type="text"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <!-- Price Range -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Price Range</label
-            >
-            <div class="flex gap-4">
-              <input
-                v-model="filters.minPrice"
-                type="number"
-                placeholder="Min"
-                class="w-1/2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-              <input
-                v-model="filters.maxPrice"
-                type="number"
-                placeholder="Max"
-                class="w-1/2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <!-- Brand -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Brand</label
-            >
-            <select
-              v-model="filters.brand"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">All Brands</option>
-              <option v-for="brand in brands" :key="brand" :value="brand">{{ brand }}</option>
-            </select>
-          </div>
-
-          <!-- Rating -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Minimum Rating</label
-            >
-            <select
-              v-model="filters.rating"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">Any Rating</option>
-              <option v-for="rating in [4, 3, 2, 1]" :key="rating" :value="rating">
-                {{ rating }}+ Stars
-              </option>
-            </select>
-          </div>
-
-          <!-- Buttons -->
-          <div class="flex justify-end gap-2">
-            <button
-              @click="showFilterModal = false"
-              class="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              @click="applyFilters"
-              class="px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg dark:bg-gray-700 dark:hover:bg-gray-600"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Products Section -->
-      <div class="container mx-auto px-4 py-8">
-        <!-- Product Carousel -->
-        <div class="relative">
-          <button
-            @click="scrollLeft"
-            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <div class="overflow-hidden" ref="productsContainer">
-            <div
-              class="flex gap-6 transition-transform duration-300"
-              :style="{ transform: `translateX(-${scrollPosition}px)` }"
-            >
-              <div v-for="product in products" :key="product.id" class="flex-none w-72">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                  <img :src="product.image" :alt="product.title" class="w-full h-48 object-cover" />
-                  <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                      {{ product.title }}
-                    </h3>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                      {{ product.description }}
-                    </p>
-
-                    <!-- Car Details -->
-                    <div class="mt-2 space-y-1">
-                      <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <span class="font-medium">Brand:</span> {{ product.brand }}
-                      </p>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <span class="font-medium">Year:</span> {{ product.year }}
-                      </p>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <span class="font-medium">Mileage:</span> {{ product.mileage }} miles
-                      </p>
-                    </div>
-
-                    <!-- Key Features -->
-                    <div class="mt-3">
-                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Key Features:
-                      </p>
-                      <ul class="text-sm text-gray-600 dark:text-gray-400 list-disc list-inside">
-                        <li v-for="feature in product.features.slice(0, 2)" :key="feature">
-                          {{ feature }}
-                        </li>
-                      </ul>
-                    </div>
-
-                    <!-- Rating -->
-                    <div class="flex items-center mt-2">
-                      <div class="flex">
-                        <svg
-                          v-for="i in 5"
-                          :key="i"
-                          :class="[
-                            'w-5 h-5',
-                            i <= product.rating
-                              ? 'text-yellow-400'
-                              : 'text-gray-300 dark:text-gray-600',
-                          ]"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                          />
-                        </svg>
-                      </div>
-                      <span class="ml-2 text-gray-600 dark:text-gray-400"
-                        >{{ product.rating }}/5</span
-                      >
-                    </div>
-
-                    <div class="mt-4 flex justify-between items-center">
-                      <span class="text-lg font-bold text-gray-900 dark:text-white"
-                        >${{ product.price }}</span
-                      >
-                      <button
-                        @click="openProductDetails(product)"
-                        class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        See Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            @click="scrollRight"
-            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Product Details Modal -->
-      <div
-        v-if="selectedProduct"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      >
+    <!-- Products grid only -->
+    <div class="container mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8">
         <div
-          class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+          v-for="product in products"
+          :key="product.id"
+          class="bg-white/90 dark:bg-gray-800/50 backdrop-blur rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 shadow-lg"
         >
-          <div class="flex justify-between items-start mb-4">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ selectedProduct.title }}
-            </h2>
-            <button
-              @click="selectedProduct = null"
-              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          <div class="relative">
+            <img :src="product.image" :alt="product.title" class="h-64 w-full object-cover" />
+            <span
+              class="absolute top-4 right-4 bg-amber-500 text-black font-bold px-4 py-1 rounded-full"
             >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+              {{ product.year }}
+            </span>
           </div>
 
-          <img
-            :src="selectedProduct.image"
-            :alt="selectedProduct.title"
-            class="w-full h-64 object-cover rounded-lg mb-4"
-          />
-
-          <div class="space-y-4">
-            <p class="text-gray-600 dark:text-gray-400">{{ selectedProduct.description }}</p>
-
-            <div class="flex items-center">
-              <div class="flex">
-                <svg
-                  v-for="i in 5"
-                  :key="i"
-                  :class="[
-                    'w-5 h-5',
-                    i <= selectedProduct.rating
-                      ? 'text-yellow-400'
-                      : 'text-gray-300 dark:text-gray-600',
-                  ]"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                  />
-                </svg>
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ product.title }}</h3>
+              <div class="flex items-center gap-1">
+                <span class="text-amber-500">★</span>
+                <span class="text-gray-700 dark:text-gray-300">{{ product.rating }}</span>
               </div>
-              <span class="ml-2 text-gray-600 dark:text-gray-400"
-                >{{ selectedProduct.rating }}/5</span
-              >
             </div>
+
+            <!-- Key Performance Stats -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+              <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
+                <span class="text-amber-600 dark:text-amber-500 text-sm">Power</span>
+                <p class="font-bold text-gray-900 dark:text-white">{{ product.features[0] }}</p>
+              </div>
+              <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
+                <span class="text-amber-600 dark:text-amber-500 text-sm">Acceleration</span>
+                <p class="font-bold text-gray-900 dark:text-white">{{ product.features[1] }}</p>
+              </div>
+            </div>
+
+            <p class="text-gray-600 dark:text-gray-300 mb-6">{{ product.description }}</p>
 
             <div class="flex justify-between items-center">
               <span class="text-2xl font-bold text-gray-900 dark:text-white"
-                >${{ selectedProduct.price }}</span
+                >${{ product.price.toLocaleString() }}</span
               >
               <button
-                @click="openPurchaseModal"
-                class="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                @click="openPurchaseModal(product)"
+                class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
               >
-                Purchase Now
+                View Details
               </button>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Purchase Modal -->
+    <!-- Enhanced Purchase Modal -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-gray-600/80 dark:bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-y-auto"
+    >
       <div
-        v-if="showPurchaseModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        class="my-8 bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full p-8 border border-gray-200 dark:border-amber-500 relative shadow-xl"
       >
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Complete Purchase</h3>
-
-          <!-- Quantity -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Quantity</label
-            >
-            <input
-              v-model="purchaseDetails.quantity"
-              type="number"
-              min="1"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <!-- Delivery Address -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >Delivery Address</label
-            >
-            <textarea
-              v-model="purchaseDetails.address"
-              rows="3"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            ></textarea>
-          </div>
-
-          <!-- Payment Details -->
-          <div class="mb-6 space-y-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >Payment Details</label
-            >
-            <input
-              v-model="purchaseDetails.cardNumber"
-              type="text"
-              placeholder="Card Number"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-            <div class="flex gap-4">
-              <input
-                v-model="purchaseDetails.expiryDate"
-                type="text"
-                placeholder="MM/YY"
-                class="w-1/2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-6">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+            {{ selectedProduct.title }}
+          </h2>
+          <button
+            @click="closeModal"
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+          >
+            <span class="sr-only">Close</span>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
               />
-              <input
-                v-model="purchaseDetails.cvv"
-                type="text"
-                placeholder="CVV"
-                class="w-1/2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-green-500 dark:focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
+            </svg>
+          </button>
+        </div>
 
-          <!-- Total -->
-          <div class="mb-6">
-            <div class="flex justify-between text-lg font-semibold">
-              <span class="text-gray-700 dark:text-gray-300">Total:</span>
-              <span class="text-gray-900 dark:text-white">${{ calculateTotal }}</span>
-            </div>
-          </div>
-
-          <!-- Buttons -->
-          <div class="flex justify-end gap-2">
+        <!-- Tabs -->
+        <div class="mb-6">
+          <div class="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
             <button
-              @click="showPurchaseModal = false"
-              class="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              :class="[
+                'px-4 py-2 font-semibold transition-colors relative',
+                activeTab === tab.id
+                  ? 'text-amber-600 dark:text-amber-500'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-amber-500',
+              ]"
             >
-              Cancel
+              {{ tab.name }}
+              <span
+                v-if="activeTab === tab.id"
+                class="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500"
+              ></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Left Column - Always visible -->
+          <div class="space-y-6">
+            <img
+              :src="selectedProduct.image"
+              :alt="selectedProduct.title"
+              class="w-full h-64 object-cover rounded-lg"
+            />
+
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-2xl font-bold text-gray-900 dark:text-white">
+                  ${{ selectedProduct.price.toLocaleString() }}
+                </span>
+                <span class="text-amber-600 dark:text-amber-500 font-semibold">
+                  {{ selectedProduct.year }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                <span class="text-amber-500">★</span>
+                <span>{{ selectedProduct.rating }} Rating</span>
+              </div>
+            </div>
+
+            <!-- Key Features moved here -->
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+              <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-3">
+                Key Features
+              </h3>
+              <ul class="space-y-2">
+                <li
+                  v-for="(feature, index) in selectedProduct.features"
+                  :key="index"
+                  class="flex items-center gap-2 text-gray-700 dark:text-gray-300"
+                >
+                  <span class="text-amber-500">•</span>
+                  {{ feature }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Right Column - Tab Content -->
+          <div>
+            <!-- Vehicle Details Tab -->
+            <div v-if="activeTab === 'details'" class="space-y-6">
+              <div>
+                <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-4">
+                  Specifications
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div
+                    v-for="(value, key) in selectedProduct.specifications"
+                    :key="key"
+                    class="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg"
+                  >
+                    <span class="text-gray-600 dark:text-gray-400 text-sm capitalize">{{
+                      key
+                    }}</span>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ value }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Financing Tab -->
+            <div v-if="activeTab === 'financing'" class="space-y-6">
+              <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-4">
+                  Financing Options
+                </h3>
+                <div class="space-y-4">
+                  <div
+                    class="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700"
+                  >
+                    <span class="text-gray-700 dark:text-gray-300">Monthly Payment</span>
+                    <span class="font-bold text-gray-900 dark:text-white">
+                      ${{ calculateMonthlyPayment(selectedProduct.price, 60).toLocaleString() }}/mo
+                    </span>
+                  </div>
+                  <div
+                    class="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700"
+                  >
+                    <span class="text-gray-700 dark:text-gray-300">Term Length</span>
+                    <span class="font-bold text-gray-900 dark:text-white">60 months</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-700 dark:text-gray-300">APR</span>
+                    <span class="font-bold text-gray-900 dark:text-white">4.99%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Form Tab -->
+            <div v-if="activeTab === 'contact'" class="space-y-6">
+              <form @submit.prevent="submitPurchase" class="space-y-4">
+                <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500">
+                  Request Information
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                  <input
+                    v-model="purchaseForm.name"
+                    type="text"
+                    placeholder="Full Name"
+                    required
+                    class="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 w-full text-gray-900 dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <input
+                    v-model="purchaseForm.email"
+                    type="email"
+                    placeholder="Email Address"
+                    required
+                    class="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 w-full text-gray-900 dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <input
+                    v-model="purchaseForm.phone"
+                    type="tel"
+                    placeholder="Phone Number"
+                    required
+                    class="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 w-full text-gray-900 dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <textarea
+                    v-model="purchaseForm.message"
+                    placeholder="Additional Comments or Questions"
+                    class="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 w-full h-32 text-gray-900 dark:text-white placeholder-gray-500 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  >
+                  </textarea>
+                </div>
+
+                <div class="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    @click="closeModal"
+                    class="px-6 py-2 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-8 py-2 rounded-full transition-colors"
+                  >
+                    Submit Inquiry
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div
+      v-if="showFilterModal"
+      class="fixed inset-0 bg-gray-600/80 dark:bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-y-auto"
+    >
+      <div
+        class="my-8 bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full p-8 border border-gray-200 dark:border-amber-500 relative shadow-xl"
+      >
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-6">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Filters</h2>
+          <button
+            @click="showFilterModal = false"
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+          >
+            <span class="sr-only">Close</span>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Filter Content -->
+        <div class="space-y-6 w-full max-w-lg mx-auto">
+          <!-- Price Range -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Price Range</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  v-model="filters.minPrice"
+                  type="number"
+                  class="w-full bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  placeholder="Min Price"
+                />
+              </div>
+              <div>
+                <input
+                  v-model="filters.maxPrice"
+                  type="number"
+                  class="w-full bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  placeholder="Max Price"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Brand Selection -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Brand</h3>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="brand in availableBrands"
+                :key="brand"
+                @click="toggleBrand(brand)"
+                :class="[
+                  'px-4 py-2 rounded-full transition-colors',
+                  filters.brands.includes(brand)
+                    ? 'bg-amber-500 text-black font-semibold'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700',
+                ]"
+              >
+                {{ brand }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Features Input -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Features</h3>
+            <div class="space-y-3">
+              <input
+                v-model="newFeature"
+                @keydown.enter="addFeature"
+                type="text"
+                class="w-full bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                placeholder="Type feature and press Enter"
+              />
+              <!-- Feature Bubbles -->
+              <div class="flex flex-wrap gap-2">
+                <div
+                  v-for="feature in filters.features"
+                  :key="feature"
+                  class="group bg-amber-500 text-black rounded-full px-3 py-1 flex items-center gap-1"
+                >
+                  <span>{{ feature }}</span>
+                  <button
+                    @click="removeFeature(feature)"
+                    class="hover:bg-amber-600 rounded-full p-1"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3 w-3"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              @click="resetFilters"
+              class="px-6 py-2 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-400 transition-colors"
+            >
+              Reset
             </button>
             <button
-              @click="completePurchase"
-              class="px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg dark:bg-gray-700 dark:hover:bg-gray-600"
+              @click="applyFilters"
+              class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-8 py-2 rounded-full transition-colors"
             >
-              Complete Purchase
+              Apply Filters
             </button>
           </div>
         </div>
@@ -591,12 +603,11 @@
     </div>
   </div>
 </template>
-
 <script>
-import { ref } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import productsData from '@/data/products.json'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 // Import images
 import alfaRomeo from '@/assets/images/alfa.webp'
@@ -605,9 +616,66 @@ import bmwM5 from '@/assets/images/bmw.avif'
 
 export default {
   name: 'HomeView',
+  components: {
+    ThemeToggle,
+  },
   setup() {
+    const router = useRouter()
     const showSidebar = ref(false)
     const isScrolled = ref(false)
+    const showFilterModal = ref(false)
+    const showSortMenu = ref(false)
+
+    const newFeature = ref('')
+    const filters = reactive({
+      minPrice: '',
+      maxPrice: '',
+      brands: [],
+      features: [],
+    })
+
+    const toggleBrand = (brand) => {
+      const index = filters.brands.indexOf(brand)
+      if (index === -1) {
+        filters.brands.push(brand)
+      } else {
+        filters.brands.splice(index, 1)
+      }
+    }
+
+    const addFeature = () => {
+      if (newFeature.value.trim() && !filters.features.includes(newFeature.value.trim())) {
+        filters.features.push(newFeature.value.trim())
+        newFeature.value = ''
+      }
+    }
+
+    const removeFeature = (feature) => {
+      const index = filters.features.indexOf(feature)
+      if (index !== -1) {
+        filters.features.splice(index, 1)
+      }
+    }
+
+    const resetFilters = () => {
+      filters.minPrice = ''
+      filters.maxPrice = ''
+      filters.brands = []
+      filters.features = []
+      newFeature.value = ''
+    }
+
+    const applyFilters = () => {
+      // Implement your filtering logic here
+      showFilterModal.value = false
+    }
+
+    const sortOptions = [
+      { label: 'Price: Low to High', value: 'price-asc' },
+      { label: 'Price: High to Low', value: 'price-desc' },
+      { label: 'Name: A to Z', value: 'name-asc' },
+      { label: 'Name: Z to A', value: 'name-desc' },
+    ]
 
     // Map the products with the correct image imports
     const products = ref(
@@ -617,40 +685,158 @@ export default {
       })),
     )
 
-    // Add scroll handler
+    const filteredProducts = computed(() => {
+      return products.value.filter((product) => {
+        if (filters.minPrice && product.price < filters.minPrice) return false
+        if (filters.maxPrice && product.price > filters.maxPrice) return false
+        if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false
+        if (
+          filters.features.length > 0 &&
+          !filters.features.every((feature) => product.features.includes(feature))
+        )
+          return false
+        return true
+      })
+    })
+
+    const sortProducts = (sortBy) => {
+      const sorted = [...products.value]
+      switch (sortBy) {
+        case 'price-asc':
+          sorted.sort((a, b) => a.price - b.price)
+          break
+        case 'price-desc':
+          sorted.sort((a, b) => b.price - a.price)
+          break
+        case 'name-asc':
+          sorted.sort((a, b) => a.name.localeCompare(b.name))
+          break
+        case 'name-desc':
+          sorted.sort((a, b) => b.name.localeCompare(a.name))
+          break
+      }
+      products.value = sorted
+      showSortMenu.value = false
+    }
+
     const handleScroll = () => {
       isScrolled.value = window.scrollY > 0
     }
 
-    // Add event listener when component mounts
     window.addEventListener('scroll', handleScroll)
 
-    // Cleanup when component unmounts
     const cleanup = () => {
       window.removeEventListener('scroll', handleScroll)
     }
 
-    const userInitials = ref('JD') // Placeholder initials, replace with actual user data
+    const userInitials = ref('JD')
 
     const logout = () => {
-      const router = useRouter()
-      const authStore = useAuthStore()
-      authStore.clearUser()
+      showSidebar.value = false
       router.push('/login')
     }
 
+    const showModal = ref(false)
+    const selectedProduct = ref(null)
+    const purchaseForm = reactive({
+      name: '',
+      email: '',
+      phone: '',
+      preferredTime: '',
+      message: '',
+    })
+
+    const openPurchaseModal = (product) => {
+      selectedProduct.value = product
+      showModal.value = true
+      document.body.classList.add('modal-open')
+    }
+
+    const closeModal = () => {
+      showModal.value = false
+      document.body.classList.remove('modal-open')
+      // Reset form
+      Object.keys(purchaseForm).forEach((key) => (purchaseForm[key] = ''))
+    }
+
+    const submitPurchase = () => {
+      // Add your form submission logic here
+      console.log('Form submitted:', purchaseForm)
+      closeModal()
+    }
+
+    const activeTab = ref('details')
+    const tabs = [
+      { id: 'details', name: 'Vehicle Details' },
+      { id: 'financing', name: 'Financing' },
+      { id: 'contact', name: 'Contact' },
+    ]
+
+    const calculateMonthlyPayment = (price, months, apr = 4.99) => {
+      const principal = price
+      const rate = apr / 1200 // Monthly interest rate
+      const n = months
+      const payment = (principal * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1)
+      return Math.round(payment)
+    }
+
+    // Get unique brands from products
+    const availableBrands = computed(() => [...new Set(products.value.map((p) => p.brand))])
+
+    // Generate year range
+    const availableYears = computed(() => {
+      const years = []
+      for (let year = 2020; year <= 2024; year++) {
+        years.push(year)
+      }
+      return years
+    })
+
+    // Get common features from all products
+    const commonFeatures = computed(() => {
+      const features = new Set()
+      products.value.forEach((product) => {
+        product.features.forEach((feature) => {
+          features.add(feature)
+        })
+      })
+      return Array.from(features)
+    })
+
     return {
-      products,
+      products: filteredProducts,
       showSidebar,
       isScrolled,
       userInitials,
       logout,
       cleanup,
+      showFilterModal,
+      showSortMenu,
+      filters,
+      sortOptions,
+      sortProducts,
+      applyFilters,
+      showModal,
+      selectedProduct,
+      purchaseForm,
+      openPurchaseModal,
+      closeModal,
+      submitPurchase,
+      activeTab,
+      tabs,
+      calculateMonthlyPayment,
+      availableBrands,
+      availableYears,
+      commonFeatures,
+      resetFilters,
+      newFeature,
+      toggleBrand,
+      addFeature,
+      removeFeature,
     }
   },
 }
 </script>
-
 <style>
 .overflow-hidden {
   overflow: hidden !important;
@@ -658,5 +844,17 @@ export default {
 
 .backdrop-blur-sm {
   backdrop-filter: blur(8px);
+}
+</style>
+
+<style scoped>
+/* Prevent body scroll when modal is open */
+:deep(body.modal-open) {
+  overflow: hidden;
+}
+
+/* Add smooth scrolling to the whole page */
+html {
+  scroll-behavior: smooth;
 }
 </style>

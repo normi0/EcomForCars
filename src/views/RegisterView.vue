@@ -1,6 +1,78 @@
 <template>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Fixed Navigation Bar -->
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-lg z-50 transition-all duration-300"
+      :class="{ 'shadow-md bg-opacity-95 backdrop-blur-sm': isScrolled }"
+    >
+      <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+          <!-- Logo/Brand -->
+          <router-link to="/" class="text-xl font-bold text-gray-900 dark:text-white">
+            TaskFlow
+          </router-link>
+
+          <!-- Navigation Links -->
+          <div class="flex items-center space-x-6">
+            <router-link
+              to="/login"
+              class="text-gray-600 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-500 transition-colors duration-200"
+              :class="{ 'text-green-500 dark:text-green-500': $route.path === '/login' }"
+            >
+              Login
+            </router-link>
+            <router-link
+              to="/register"
+              class="text-gray-600 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-500 transition-colors duration-200"
+              :class="{ 'text-green-500 dark:text-green-500': $route.path === '/register' }"
+            >
+              Register
+            </router-link>
+            <button
+              @click="toggleTheme"
+              class="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Toggle Theme"
+            >
+              <!-- Sun icon for dark mode -->
+              <svg
+                v-if="isDark"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="{2}"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <!-- Moon icon for light mode -->
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-gray-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="{2}"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Add margin-top to account for fixed navbar -->
+    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 mt-16">
       <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
@@ -28,6 +100,7 @@
               v-model="form.name"
               type="text"
               required
+              placeholder="Enter your full name"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.name }"
             />
@@ -44,6 +117,7 @@
               v-model="form.email"
               type="email"
               required
+              placeholder="Enter your email address"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.email }"
             />
@@ -63,6 +137,7 @@
               v-model="form.password"
               type="password"
               required
+              placeholder="Create a password"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.password }"
             />
@@ -82,6 +157,7 @@
               v-model="form.confirmPassword"
               type="password"
               required
+              placeholder="Confirm your password"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.confirmPassword }"
             />
@@ -162,15 +238,13 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 export default {
   name: 'RegisterView',
   setup() {
     const router = useRouter()
-
-    // Initialize the form data
     const form = ref({
       name: '',
       email: '',
@@ -178,7 +252,6 @@ export default {
       confirmPassword: '',
     })
 
-    // Initialize errors object
     const errors = ref({
       name: '',
       email: '',
@@ -186,8 +259,25 @@ export default {
       confirmPassword: '',
     })
 
-    const register = async () => {
-      // Clear previous errors
+    const isScrolled = ref(false)
+
+    // Add scroll handler
+    const handleScroll = () => {
+      isScrolled.value = window.scrollY > 0
+    }
+
+    // Add event listeners
+    onMounted(() => {
+      window.addEventListener('scroll', handleScroll)
+    })
+
+    // Cleanup
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
+    })
+
+    const register = () => {
+      // Simple validation
       errors.value = {
         name: '',
         email: '',
@@ -195,45 +285,53 @@ export default {
         confirmPassword: '',
       }
 
-      // Basic validation
       if (!form.value.name) {
         errors.value.name = 'Name is required'
+        return
       }
       if (!form.value.email) {
         errors.value.email = 'Email is required'
+        return
       }
       if (!form.value.password) {
         errors.value.password = 'Password is required'
+        return
       }
       if (form.value.password !== form.value.confirmPassword) {
         errors.value.confirmPassword = 'Passwords do not match'
-      }
-
-      // Check if there are any errors
-      if (Object.values(errors.value).some((error) => error)) {
         return
       }
 
-      try {
-        // Add your registration logic here
-        console.log('Form submitted:', form.value)
-
-        // Redirect to login after successful registration
-        router.push('/login')
-      } catch (error) {
-        console.error('Registration error:', error)
+      // Simple email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(form.value.email)) {
+        errors.value.email = 'Please enter a valid email address'
+        return
       }
+
+      // If validation passes, navigate to home
+      router.push('/')
+    }
+
+    const isDark = ref(document.documentElement.classList.contains('dark'))
+
+    const toggleTheme = () => {
+      isDark.value = !isDark.value
+      document.documentElement.classList.toggle('dark')
+      localStorage.theme = isDark.value ? 'dark' : 'light'
     }
 
     return {
       form,
       errors,
       register,
+      isScrolled,
+      isDark,
+      toggleTheme,
     }
   },
 }
 </script>
-
 <style scoped>
 /* Remove any custom styles that might affect spacing */
 </style>

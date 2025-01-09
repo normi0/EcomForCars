@@ -1,12 +1,79 @@
 <template>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-    <nav class="w-full bg-white dark:bg-gray-900 shadow-lg">
-      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">TaskFlow</h1>
+    <!-- Fixed Navigation Bar -->
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-lg z-50 transition-all duration-300"
+      :class="{ 'shadow-md bg-opacity-95 backdrop-blur-sm': isScrolled }"
+    >
+      <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+          <!-- Logo/Brand -->
+          <router-link to="/" class="text-xl font-bold text-gray-900 dark:text-white">
+            TaskFlow
+          </router-link>
+
+          <!-- Navigation Links -->
+          <div class="flex items-center space-x-6">
+            <router-link
+              to="/login"
+              class="text-gray-600 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-500 transition-colors duration-200"
+              :class="{ 'text-green-500 dark:text-green-500': $route.path === '/login' }"
+            >
+              Login
+            </router-link>
+            <router-link
+              to="/register"
+              class="text-gray-600 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-500 transition-colors duration-200"
+              :class="{ 'text-green-500 dark:text-green-500': $route.path === '/register' }"
+            >
+              Register
+            </router-link>
+            <!-- Add Theme Toggle Button -->
+            <button
+              @click="toggleTheme"
+              class="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Toggle Theme"
+            >
+              <!-- Sun icon for dark mode -->
+              <svg
+                v-if="isDark"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="{2}"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              <!-- Moon icon for light mode -->
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-gray-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="{2}"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
 
-    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Add margin-top to account for fixed navbar -->
+    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 mt-16">
       <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
@@ -36,6 +103,7 @@
               v-model="form.email"
               type="email"
               required
+              placeholder="Enter your email address"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.email }"
             />
@@ -55,18 +123,15 @@
               v-model="form.password"
               type="password"
               required
+              placeholder="Enter your password"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.password }"
             />
             <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</p>
-          </div>
-
-          <!-- Forgot Password Link -->
-          <div class="flex items-center justify-end">
+            <!-- Add Forgot Password Link -->
             <button
-              type="button"
-              @click="showForgotPasswordModal = true"
-              class="text-sm font-medium text-black hover:text-gray-800 dark:text-white dark:hover:text-gray-200"
+              @click.prevent="showForgotPassword = true"
+              class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
             >
               Forgot your password?
             </button>
@@ -146,94 +211,131 @@
     </footer>
 
     <!-- Forgot Password Modal -->
-    <ForgotPasswordModal v-if="showForgotPasswordModal" @close="showForgotPasswordModal = false" />
+    <div
+      v-if="showForgotPassword"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Reset Password</h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email Address
+            </label>
+            <input
+              v-model="resetEmail"
+              type="email"
+              placeholder="Enter your email address"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button
+              @click="showForgotPassword = false"
+              class="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              @click="sendResetCode"
+              class="px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Receive Code
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import ForgotPasswordModal from '@/components/ForgotPasswordModal.vue'
 
 export default {
   name: 'LoginView',
-  components: {
-    ForgotPasswordModal,
-  },
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
-    const showForgotPasswordModal = ref(false)
     const form = ref({
       email: '',
       password: '',
     })
+
     const errors = ref({
       email: '',
       password: '',
     })
 
-    const validateEmail = () => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const showForgotPassword = ref(false)
+    const resetEmail = ref('')
+    const isScrolled = ref(false)
+    const isDark = ref(document.documentElement.classList.contains('dark'))
+
+    // Add scroll handler
+    const handleScroll = () => {
+      isScrolled.value = window.scrollY > 0
+    }
+
+    // Add event listeners
+    onMounted(() => {
+      window.addEventListener('scroll', handleScroll)
+    })
+
+    // Cleanup
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
+    })
+
+    const login = () => {
+      // Simple validation
+      errors.value = {
+        email: '',
+        password: '',
+      }
+
       if (!form.value.email) {
         errors.value.email = 'Email is required'
-      } else if (!emailRegex.test(form.value.email)) {
-        errors.value.email = 'Please enter a valid email address'
-      } else {
-        errors.value.email = ''
+        return
       }
-    }
-
-    const validatePassword = () => {
       if (!form.value.password) {
         errors.value.password = 'Password is required'
-      } else if (form.value.password.length < 6) {
-        errors.value.password = 'Password must be at least 6 characters'
-      } else {
-        errors.value.password = ''
+        return
       }
+
+      // If validation passes, navigate to home
+      router.push('/')
     }
 
-    const login = async () => {
-      try {
-        // Replace with your actual API call
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: form.value.email,
-            password: form.value.password,
-          }),
-        })
-
-        if (response.ok) {
-          const userData = await response.json()
-          authStore.setUser(userData)
-          router.push('/')
-        } else {
-          // Handle login error
-        }
-      } catch (error) {
-        console.error('Login error:', error)
+    const sendResetCode = () => {
+      if (!resetEmail.value) {
+        alert('Please enter your email address')
+        return
       }
+      // Here you would typically send the reset code to the user's email
+      alert('If an account exists with this email, you will receive a reset code shortly.')
+      showForgotPassword.value = false
+    }
+
+    const toggleTheme = () => {
+      isDark.value = !isDark.value
+      document.documentElement.classList.toggle('dark')
+      localStorage.theme = isDark.value ? 'dark' : 'light'
     }
 
     return {
       form,
-      router,
-      login,
       errors,
-      validateEmail,
-      validatePassword,
-      showForgotPasswordModal,
+      login,
+      showForgotPassword,
+      resetEmail,
+      sendResetCode,
+      isScrolled,
+      isDark,
+      toggleTheme,
     }
   },
 }
 </script>
-
-<style scoped>
-/* Remove any custom styles that might affect spacing */
-</style>
