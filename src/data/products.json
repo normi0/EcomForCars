@@ -1,0 +1,58 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "title": "Alfa Romeo Giulia Quadrifoglio",
+      "description": "The Alfa Romeo Giulia Quadrifoglio is the high-performance variant of the Giulia luxury sedan. With its Ferrari-derived twin-turbo V6 engine, it delivers an exhilarating driving experience combined with Italian styling and craftsmanship.",
+      "price": 79995,
+      "rating": 4.7,
+      "image": "/src/assets/images/0x0.webp",
+      "brand": "Alfa Romeo",
+      "year": 2024,
+      "mileage": "0",
+      "features": [
+        "505 hp Twin-Turbo V6",
+        "0-60 mph in 3.8s",
+        "Carbon fiber hood & roof",
+        "Torque vectoring differential",
+        "Adaptive suspension"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Mercedes-AMG C63 S E Performance",
+      "description": "The Mercedes-AMG C63 S E Performance represents the next generation of AMG performance, combining a powerful turbocharged engine with hybrid technology for unprecedented power and efficiency.",
+      "price": 103500,
+      "rating": 4.8,
+      "image": "/src/assets/images/2023-mercedes-amg-c63-s-e-performance-109-65d79697e865a.webp",
+      "brand": "Mercedes-AMG",
+      "year": 2024,
+      "mileage": "0",
+      "features": [
+        "671 hp Hybrid Powertrain",
+        "0-60 mph in 3.3s",
+        "AMG RIDE CONTROL",
+        "9-speed MCT transmission",
+        "Electric drive mode"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "BMW M5 CS",
+      "description": "The BMW M5 CS is the most powerful production car BMW has ever made. This limited-edition super sedan combines luxury with track-focused performance, featuring lightweight carbon fiber components and race-inspired interior.",
+      "price": 142995,
+      "rating": 4.9,
+      "image": "/src/assets/images/bmw-m5-cs.webp",
+      "brand": "BMW",
+      "year": 2024,
+      "mileage": "0",
+      "features": [
+        "627 hp Twin-Turbo V8",
+        "0-60 mph in 2.9s",
+        "Carbon ceramic brakes",
+        "M xDrive all-wheel drive",
+        "Carbon fiber body panels"
+      ]
+    }
+  ]
+}
