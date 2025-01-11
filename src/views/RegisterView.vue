@@ -76,14 +76,14 @@
       <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
-          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create Account</h2>
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create your account</h2>
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?
             <router-link
               to="/login"
               class="font-medium text-black hover:text-gray-800 dark:text-white dark:hover:text-gray-200"
             >
-              Sign in
+              Sign in here
             </router-link>
           </p>
         </div>
@@ -137,7 +137,7 @@
               v-model="form.password"
               type="password"
               required
-              placeholder="Create a password"
+              placeholder="Enter your password"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="{ 'border-red-500': errors.password }"
             />
@@ -167,7 +167,7 @@
           </div>
 
           <!-- Submit Button -->
-          <div class="pt-4">
+          <div>
             <button
               type="submit"
               class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -240,11 +240,15 @@
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { app } from '@/config/firebase'
 
 export default {
   name: 'RegisterView',
   setup() {
     const router = useRouter()
+    const auth = getAuth(app)
+
     const form = ref({
       name: '',
       email: '',
@@ -276,8 +280,8 @@ export default {
       window.removeEventListener('scroll', handleScroll)
     })
 
-    const register = () => {
-      // Simple validation
+    const register = async () => {
+      // Reset errors
       errors.value = {
         name: '',
         email: '',
@@ -285,6 +289,7 @@ export default {
         confirmPassword: '',
       }
 
+      // Validation
       if (!form.value.name) {
         errors.value.name = 'Name is required'
         return
@@ -297,20 +302,46 @@ export default {
         errors.value.password = 'Password is required'
         return
       }
+      if (form.value.password.length < 6) {
+        errors.value.password = 'Password must be at least 6 characters'
+        return
+      }
       if (form.value.password !== form.value.confirmPassword) {
         errors.value.confirmPassword = 'Passwords do not match'
         return
       }
 
-      // Simple email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(form.value.email)) {
-        errors.value.email = 'Please enter a valid email address'
-        return
-      }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          form.value.email,
+          form.value.password,
+        )
 
-      // If validation passes, navigate to home
-      router.push('/')
+        // Update profile with name
+        await updateProfile(userCredential.user, {
+          displayName: form.value.name,
+        })
+
+        // Successfully registered and logged in
+        console.log('Registered user:', userCredential.user)
+        router.push('/')
+      } catch (error) {
+        console.error('Registration error:', error)
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errors.value.email = 'Email already in use'
+            break
+          case 'auth/invalid-email':
+            errors.value.email = 'Invalid email address'
+            break
+          case 'auth/weak-password':
+            errors.value.password = 'Password is too weak'
+            break
+          default:
+            errors.value.email = 'Failed to register. Please try again.'
+        }
+      }
     }
 
     const isDark = ref(document.documentElement.classList.contains('dark'))

@@ -254,11 +254,14 @@
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { app } from '@/config/firebase'
 
 export default {
   name: 'LoginView',
   setup() {
     const router = useRouter()
+    const auth = getAuth(app)
     const form = ref({
       email: '',
       password: '',
@@ -289,13 +292,14 @@ export default {
       window.removeEventListener('scroll', handleScroll)
     })
 
-    const login = () => {
-      // Simple validation
+    const login = async () => {
+      // Reset errors
       errors.value = {
         email: '',
         password: '',
       }
 
+      // Validation
       if (!form.value.email) {
         errors.value.email = 'Email is required'
         return
@@ -305,18 +309,47 @@ export default {
         return
       }
 
-      // If validation passes, navigate to home
-      router.push('/')
+      try {
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          form.value.email,
+          form.value.password,
+        )
+        // Successfully logged in
+        console.log('Logged in user:', userCredential.user)
+        router.push('/home')
+      } catch (error) {
+        console.error('Login error:', error)
+        switch (error.code) {
+          case 'auth/invalid-email':
+            errors.value.email = 'Invalid email address'
+            break
+          case 'auth/user-not-found':
+            errors.value.email = 'No account found with this email'
+            break
+          case 'auth/wrong-password':
+            errors.value.password = 'Incorrect password'
+            break
+          default:
+            errors.value.email = 'Failed to login. Please try again.'
+        }
+      }
     }
 
-    const sendResetCode = () => {
+    const sendResetCode = async () => {
       if (!resetEmail.value) {
         alert('Please enter your email address')
         return
       }
-      // Here you would typically send the reset code to the user's email
-      alert('If an account exists with this email, you will receive a reset code shortly.')
-      showForgotPassword.value = false
+
+      try {
+        await sendPasswordResetEmail(auth, resetEmail.value)
+        alert('Password reset email sent! Please check your inbox.')
+        showForgotPassword.value = false
+      } catch (error) {
+        console.error('Reset password error:', error)
+        alert('Failed to send reset email. Please try again.')
+      }
     }
 
     const toggleTheme = () => {

@@ -604,6 +604,7 @@
   </div>
 </template>
 <script>
+import { getAuth, signOut } from 'firebase/auth'
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import productsData from '@/data/products.json'
@@ -625,7 +626,8 @@ export default {
     const isScrolled = ref(false)
     const showFilterModal = ref(false)
     const showSortMenu = ref(false)
-
+    const auth = getAuth()
+    const user = auth.currentUser
     const newFeature = ref('')
     const filters = reactive({
       minPrice: '',
@@ -633,7 +635,24 @@ export default {
       brands: [],
       features: [],
     })
-
+    const userInitials = computed(() => {
+      if (user && user.displayName) {
+        const nameParts = user.displayName.split(' ') //split displayed name into parts
+        const firstNameInitial = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() : ''
+        const lastNameInitial = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() : ''
+        return `${firstNameInitial}${lastNameInitial}`
+      }
+      return 'DM'
+    })
+    const logout = async () => {
+      try {
+        await signOut(auth)
+        console.log('Logged out successfully')
+        router.push('/login')
+      } catch (error) {
+        console.error('Logout error:', error)
+      }
+    }
     const toggleBrand = (brand) => {
       const index = filters.brands.indexOf(brand)
       if (index === -1) {
@@ -727,13 +746,6 @@ export default {
 
     const cleanup = () => {
       window.removeEventListener('scroll', handleScroll)
-    }
-
-    const userInitials = ref('JD')
-
-    const logout = () => {
-      showSidebar.value = false
-      router.push('/login')
     }
 
     const showModal = ref(false)
