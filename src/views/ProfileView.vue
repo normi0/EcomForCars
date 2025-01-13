@@ -100,8 +100,9 @@ export default {
         }
       }
     })
+
     const getOptimizedImageUrl = (publicId) => {
-      return `https://res.cloudinary.com/dylxqzq0y/image/upload/w_1000,h_1000,c_fill/${publicId}`
+      return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/w_1000,h_1000,c_fill/${publicId}`
     }
 
     const uploadProfilePhoto = async (event) => {
@@ -112,7 +113,8 @@ export default {
       if (!currentUser) return
 
       try {
-        const uploadResult = await uploadImage(file)
+        // Use the profile photo upload preset
+        const uploadResult = await uploadImage(file, 'profile_photo_preset')
         const downloadURL = uploadResult.secure_url
 
         // Update user profile
@@ -135,7 +137,8 @@ export default {
       if (!currentUser) return
 
       try {
-        const uploadResult = await uploadImage(file)
+        // Use the cover photo upload preset
+        const uploadResult = await uploadImage(file, 'cover_photo_preset')
         const downloadURL = uploadResult.secure_url
         coverPhotoUrl.value = downloadURL
       } catch (error) {
@@ -150,7 +153,6 @@ export default {
       userDisplayName,
       userEmail,
       uploadCoverPhoto,
-      updateProfile,
       uploadProfilePhoto,
     }
   },

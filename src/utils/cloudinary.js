@@ -1,26 +1,17 @@
-import { v2 as cloudinary } from 'cloudinary'
-
-// Initialize Cloudinary
-cloudinary.config({
-  cloud_name: process.env.VUE_APP_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.VUE_APP_CLOUDINARY_API_KEY,
-  api_secret: process.env.VUE_APP_CLOUDINARY_API_SECRET,
-})
-
 /**
  * Uploads an image to Cloudinary
  * @param {File} file - The image file to upload
- * @param {string} publicId - Optional public ID for the image
+ * @param {string} uploadPreset - The upload preset to use
  * @returns {Promise<Object>} - The upload result
  */
-export const uploadImage = async (file, publicId = '') => {
+export const uploadImage = async (file, uploadPreset) => {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', process.env.VUE_APP_CLOUDINARY_UPLOAD_PRESET) // Replace with your upload preset
+    formData.append('upload_preset', uploadPreset) // Use the provided upload preset
 
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.VUE_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
         method: 'POST',
         body: formData,
@@ -45,11 +36,13 @@ export const uploadImage = async (file, publicId = '') => {
  * @returns {string} - The optimized image URL
  */
 export const getOptimizedImageUrl = (publicId, options = {}) => {
-  return cloudinary.url(publicId, {
-    fetch_format: 'auto',
-    quality: 'auto',
-    ...options,
-  })
+  return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${publicId}?${new URLSearchParams(
+    {
+      fetch_format: 'auto',
+      quality: 'auto',
+      ...options,
+    },
+  ).toString()}`
 }
 
 /**
@@ -59,11 +52,13 @@ export const getOptimizedImageUrl = (publicId, options = {}) => {
  * @returns {string} - The transformed image URL
  */
 export const getTransformedImageUrl = (publicId, options = {}) => {
-  return cloudinary.url(publicId, {
-    crop: 'auto',
-    gravity: 'auto',
-    width: 500,
-    height: 500,
-    ...options,
-  })
+  return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${publicId}?${new URLSearchParams(
+    {
+      crop: 'auto',
+      gravity: 'auto',
+      width: 500,
+      height: 500,
+      ...options,
+    },
+  ).toString()}`
 }
