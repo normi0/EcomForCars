@@ -9,7 +9,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login',
+      redirect: '/home',
     },
     {
       path: '/login',
@@ -34,6 +34,21 @@ const router = createRouter({
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/add-cars',
+      name: 'add-cars',
+      component: () => import('../views/AddCars.vue'),
+    },
+    {
+      path: '/wishlist',
+      name: 'wishlist',
+      component: () => import('../views/WishList.vue'),
+    },
+    {
+      path: '/purchase-history',
+      name: 'purchase-history',
+      component: () => import('../views/PerchaceHistory.vue'),
     },
   ],
 })
