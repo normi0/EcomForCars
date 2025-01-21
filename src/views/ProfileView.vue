@@ -70,34 +70,59 @@
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row justify-start gap-6 py-3">
           <!-- Add Cars Button -->
-          <router-link
-            @click="navigateTo('add-cars')"
+          <button
+            @click="
+              () => {
+                mode = 'addCars'
+                router.push('/#add-cars')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             active-class="text-amber-500 dark:text-amber-500"
           >
             Add Cars
-          </router-link>
-          <!-- Wishlist router-link -->
-          <router-link
-            @click="navigateTo('wishlist')"
+          </button>
+          <!-- Wishlist Button -->
+          <button
+            @click="
+              () => {
+                mode = 'wishlist'
+                router.push('/#wishlist')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             active-class="text-amber-500 dark:text-amber-500"
           >
             Wishlist
-          </router-link>
-          <!-- Purchase History router-link -->
-          <router-link
-            @click="navigateTo('purchase-history')"
+          </button>
+          <!-- Purchase History Button -->
+          <button
+            @click="
+              () => {
+                mode = 'purchaseHistory'
+                router.push('/#purchase-history')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             active-class="text-amber-500 dark:text-amber-500"
           >
             Purchase History
-          </router-link>
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Dynamic Component Rendering -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <router-view></router-view>
+      <div v-if="mode === 'addCars'">
+        <AddCars />
+      </div>
+      <div v-else-if="mode === 'wishlist'">
+        <Wishlist />
+      </div>
+      <div v-else-if="mode === 'purchaseHistory'">
+        <PurchaseHistory />
+      </div>
     </div>
   </div>
 </template>
@@ -109,10 +134,17 @@ import { updateProfile } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
+import AddCars from '../views/AddCars.vue' // Default import
+import Wishlist from '../views/WishList.vue' // Default import
+import PurchaseHistory from '../views/PerchaceHistory.vue' // Default import
 
 export default {
   name: 'ProfileView',
-
+  components: {
+    AddCars, // Register AddCars component
+    Wishlist, // Register Wishlist component
+    PurchaseHistory, // Register PurchaseHistory component
+  },
   setup() {
     const router = useRouter()
     const user = ref(null)
@@ -120,6 +152,7 @@ export default {
     const coverPhotoUrl = ref('')
     const userDisplayName = ref('')
     const userEmail = ref('')
+    const mode = ref('currentRoute == ""? "addCars" : currentRoute')
 
     // Fetch user data from Firestore
     const fetchUserData = async (currentUser) => {
@@ -222,11 +255,6 @@ export default {
       }
     }
 
-    // Navigate to a route
-    const navigateTo = (route) => {
-      router.push({ name: route })
-    }
-
     return {
       profilePhotoUrl,
       coverPhotoUrl,
@@ -234,7 +262,7 @@ export default {
       userEmail,
       uploadCoverPhoto,
       uploadProfilePhoto,
-      navigateTo,
+      mode,
     }
   },
 }

@@ -62,8 +62,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase'
-
+import { auth } from '@/config/firebase'
 export default {
+  name: 'AddCars',
   setup() {
     const router = useRouter()
     const car = ref({
