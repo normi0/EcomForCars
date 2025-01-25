@@ -17,7 +17,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, getDocs } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 
 export default {

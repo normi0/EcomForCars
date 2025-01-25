@@ -99,6 +99,14 @@
           >
             Wishlist
           </button>
+          <!-- Properties Button -->
+          <button
+            @click="mode = 'properties'"
+            class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
+            :class="{ 'text-amber-500 dark:text-amber-500': mode === 'properties' }"
+          >
+            Properties
+          </button>
           <!-- Purchase History Button -->
           <button
             @click="mode = 'purchaseHistory'"
@@ -124,61 +132,8 @@
       </div>
 
       <!-- Display User's Cars -->
-      <div v-if="mode === 'cars'">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            v-for="car in cars"
-            :key="car.id"
-            class="bg-white/90 dark:bg-gray-800/50 backdrop-blur rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 shadow-lg"
-          >
-            <div class="relative">
-              <img :src="car.imageUrl" :alt="car.make" class="h-64 w-full object-cover" />
-              <span
-                class="absolute top-4 right-4 bg-amber-500 text-black font-bold px-4 py-1 rounded-full"
-              >
-                {{ car.year }}
-              </span>
-            </div>
-
-            <div class="p-6">
-              <div class="flex justify-between items-start mb-4">
-                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ car.make }} {{ car.model }}
-                </h3>
-                <div class="flex items-center gap-1">
-                  <span class="text-amber-500">★</span>
-                  <span class="text-gray-700 dark:text-gray-300">{{ car.rating }}</span>
-                </div>
-              </div>
-
-              <!-- Key Performance Stats -->
-              <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
-                  <span class="text-amber-600 dark:text-amber-500 text-sm">Power</span>
-                  <p class="font-bold text-gray-900 dark:text-white">{{ car.features[0] }}</p>
-                </div>
-                <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
-                  <span class="text-amber-600 dark:text-amber-500 text-sm">Acceleration</span>
-                  <p class="font-bold text-gray-900 dark:text-white">{{ car.features[1] }}</p>
-                </div>
-              </div>
-
-              <p class="text-gray-600 dark:text-gray-300 mb-6">{{ car.description }}</p>
-
-              <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-gray-900 dark:text-white"
-                  >${{ car.price.toLocaleString() }}</span
-                >
-                <button
-                  @click="openModal(car)"
-                  class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div v-if="mode === 'properties'">
+        <PropertiesList :cars="cars" @view-details="openModal" />
       </div>
     </div>
 
@@ -196,6 +151,7 @@ import AddCars from './AddCars.vue'
 import Wishlist from '../views/WishList.vue'
 import PurchaseHistory from '../views/PerchaceHistory.vue'
 import CarModal from '../components/CarsModel.vue'
+import PropertiesList from '@/components/ Properties.vue'
 
 // Example function to upload images to Cloudinary
 const uploadImage = async (file, uploadPreset, publicId = null) => {
@@ -228,6 +184,7 @@ export default {
     Wishlist,
     PurchaseHistory,
     CarModal,
+    PropertiesList,
   },
   setup() {
     const user = ref(null)
@@ -235,7 +192,7 @@ export default {
     const coverPhotoUrl = ref('')
     const userDisplayName = ref('')
     const userEmail = ref('')
-    const mode = ref('cars') // Set default mode to 'cars'
+    const mode = ref('properties') // Set default mode to 'cars'
     const cars = ref([])
     const showModal = ref(false)
     const selectedCar = ref(null)
@@ -381,6 +338,7 @@ export default {
       closeModal,
       uploadProfilePhoto,
       uploadCoverPhoto,
+      PropertiesList,
     }
   },
 }
