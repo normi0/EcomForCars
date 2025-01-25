@@ -133,7 +133,7 @@
 
       <!-- Display User's Cars -->
       <div v-if="mode === 'properties'">
-        <PropertiesList :cars="cars" @view-details="openModal" />
+        <PropertiesList :cars="cars" @view-details="openModal" @delete-car="deleteCar" />
       </div>
     </div>
 
@@ -144,7 +144,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { collection, query, getDocs, doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, query, getDocs, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { updateProfile } from 'firebase/auth'
 import AddCars from './AddCars.vue'
@@ -185,6 +185,29 @@ export default {
     PurchaseHistory,
     CarModal,
     PropertiesList,
+  },
+  methods: {
+    // Delete car from Firestore
+    async deleteCar(carId) {
+      try {
+        const user = auth.currentUser
+        if (!user) {
+          alert('You must be logged in to delete a car.')
+          return
+        }
+
+        // Delete the car from Firestore
+        await deleteDoc(doc(db, 'users', user.uid, 'cars', carId))
+
+        // Remove the car from the local list
+        this.cars = this.cars.filter((car) => car.id !== carId)
+
+        alert('Car deleted successfully!')
+      } catch (error) {
+        console.error('Error deleting car:', error)
+        alert('Failed to delete car')
+      }
+    },
   },
   setup() {
     const user = ref(null)

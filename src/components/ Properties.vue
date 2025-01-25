@@ -52,6 +52,13 @@
             >
               View Details
             </button>
+            <!-- delete car btn -->
+            <button
+              @click="$emit('delete-car', car.id)"
+              class="bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-2 rounded-full transition-colors"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -68,6 +75,6 @@ export default {
       required: true,
     },
   },
-  emits: ['view-details'],
+  emits: ['view-details', 'delete-car'],
 }
 </script>

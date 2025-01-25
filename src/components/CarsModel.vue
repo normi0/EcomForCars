@@ -4,7 +4,7 @@
     class="fixed inset-0 bg-gray-600/80 dark:bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-y-auto"
   >
     <div
-      class="my-8 bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full p-8 border border-gray-200 dark:border-amber-500 relative shadow-xl"
+      class="my-8 bg-white dark:bg-gray-900 rounded-xl max-w-5xl w-full p-8 border border-gray-200 dark:border-amber-500 relative shadow-xl"
     >
       <!-- Header -->
       <div class="flex justify-between items-start mb-6">
@@ -51,17 +51,19 @@
       </div>
 
       <!-- Tab Content -->
-      <div class="grid md:grid-cols-2 gap-8">
-        <!-- Left Column - Always visible -->
+      <div class="grid md:grid-cols-[1.5fr_1fr] gap-8">
+        <!-- Left Column - Wider for Car Image and Key Features -->
         <div class="space-y-6">
+          <!-- Car Image -->
           <img
             :src="selectedProduct.imageUrl"
             :alt="selectedProduct.make"
-            class="w-full h-64 object-cover rounded-lg"
+            class="w-full h-96 object-cover rounded-lg"
           />
 
-          <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-            <div class="flex justify-between items-center mb-2">
+          <!-- Price and Rating Section -->
+          <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
               <span class="text-2xl font-bold text-gray-900 dark:text-white">
                 ${{ selectedProduct.price.toLocaleString() }}
               </span>
@@ -75,10 +77,10 @@
             </div>
           </div>
 
-          <!-- Key Features moved here -->
-          <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-            <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-3">Key Features</h3>
-            <ul class="space-y-2">
+          <!-- Key Features -->
+          <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-4">Key Features</h3>
+            <ul class="space-y-3">
               <li
                 v-for="(feature, index) in selectedProduct.features"
                 :key="index"
@@ -92,7 +94,7 @@
         </div>
 
         <!-- Right Column - Tab Content -->
-        <div>
+        <div class="space-y-6">
           <!-- Vehicle Details Tab -->
           <div v-if="activeTab === 'details'" class="space-y-6">
             <div>
@@ -103,7 +105,7 @@
                 <div
                   v-for="(value, key) in selectedProduct.specifications"
                   :key="key"
-                  class="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg"
+                  class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg"
                 >
                   <span class="text-gray-600 dark:text-gray-400 text-sm capitalize">{{ key }}</span>
                   <p class="font-semibold text-gray-900 dark:text-white">{{ value }}</p>
@@ -114,7 +116,7 @@
 
           <!-- Financing Tab -->
           <div v-if="activeTab === 'financing'" class="space-y-6">
-            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+            <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
               <h3 class="text-xl font-bold text-amber-600 dark:text-amber-500 mb-4">
                 Financing Options
               </h3>
@@ -177,6 +179,7 @@
                 </textarea>
               </div>
 
+              <!-- Buttons -->
               <div class="flex justify-end gap-4">
                 <button
                   type="button"
