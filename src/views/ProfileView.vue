@@ -141,17 +141,26 @@
     <CarModal v-if="showModal" :selectedProduct="selectedCar" @close-modal="closeModal" />
   </div>
 </template>
-
 <script>
 import { ref, onMounted } from 'vue'
-import { collection, query, getDocs, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  where,
+  documentId,
+} from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { updateProfile } from 'firebase/auth'
 import AddCars from './AddCars.vue'
 import Wishlist from '../views/WishList.vue'
 import PurchaseHistory from '../views/PerchaceHistory.vue'
 import CarModal from '../components/CarsModel.vue'
-import PropertiesList from '@/components/ Properties.vue'
+import PropertiesList from '../components/ Properties.vue'
 
 // Example function to upload images to Cloudinary
 const uploadImage = async (file, uploadPreset, publicId = null) => {
@@ -215,7 +224,7 @@ export default {
     const coverPhotoUrl = ref('')
     const userDisplayName = ref('')
     const userEmail = ref('')
-    const mode = ref('properties') // Set default mode to 'cars'
+    const mode = ref('properties') // Set default mode to 'properties'
     const cars = ref([])
     const showModal = ref(false)
     const selectedCar = ref(null)
@@ -311,16 +320,21 @@ export default {
       if (!currentUser) return
 
       try {
-        const carsCollection = collection(db, 'users', currentUser.uid, 'cars')
-        const carsQuery = query(carsCollection)
-        const querySnapshot = await getDocs(carsQuery)
-
-        cars.value = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
+        const carIds = userDoc.data()?.carReferences || []
+        if (carIds.length) {
+          const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
+          const querySnapshot = await getDocs(carQuery)
+          cars.value = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        } else {
+          cars.value = []
+        }
       } catch (error) {
-        console.error('Error fetching cars:', error)
+        console.error('Error fetching user cars:', error)
+        alert('Failed to fetch user cars')
       }
     }
 
@@ -361,7 +375,6 @@ export default {
       closeModal,
       uploadProfilePhoto,
       uploadCoverPhoto,
-      PropertiesList,
     }
   },
 }

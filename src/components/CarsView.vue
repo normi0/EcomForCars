@@ -33,11 +33,11 @@
           <!-- Key Performance Stats -->
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
-              <span class="text-amber-600 dark:text-amber-500 text-sm">Power</span>
+              <h3 class="text-amber-600 dark:text-amber-500 text-sm">Power</h3>
               <p class="font-bold text-gray-900 dark:text-white">{{ car.features[0] }}</p>
             </div>
             <div class="bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">
-              <span class="text-amber-600 dark:text-amber-500 text-sm">Acceleration</span>
+              <h3 class="text-amber-600 dark:text-amber-500 text-sm">Acceleration</h3>
               <p class="font-bold text-gray-900 dark:text-white">{{ car.features[1] }}</p>
             </div>
           </div>

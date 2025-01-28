@@ -17,7 +17,7 @@
           </span>
         </div>
 
-        <div class="p-6">
+        <div class="p-2">
           <div class="flex justify-between items-start mb-4">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
               {{ car.make }} {{ car.model }}
@@ -43,38 +43,58 @@
           <p class="text-gray-600 dark:text-gray-300 mb-6">{{ car.description }}</p>
 
           <div class="flex justify-between items-center">
-            <span class="text-2xl font-bold text-gray-900 dark:text-white">
-              ${{ car.price.toLocaleString() }}
-            </span>
-            <button
-              @click="$emit('view-details', car)"
-              class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
-            >
-              View Details
-            </button>
-            <!-- delete car btn -->
-            <button
-              @click="$emit('delete-car', car.id)"
-              class="bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-2 rounded-full transition-colors"
-            >
-              Delete
-            </button>
+            <p class="font-bold text-gray-900 dark:text-white">
+              {{ car.price }}
+            </p>
+            <div class="flex gap-2">
+              <button
+                @click="$emit('view-details', car)"
+                class="bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg p-2 transition-colors ease-in-out duration-300 text-sm"
+              >
+                View Details
+              </button>
+              <!-- delete car btn -->
+              <button
+                @click="$emit('delete-car', car.id)"
+                class="bg-red-500 hover:bg-red-600 text-white font-bold p-2 rounded-lg transition-colors ease-in-out duration-300 text-sm"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <!-- Modal -->
+    <CarsModel v-if="selectedCar" :selectedProduct="selectedCar" @close-modal="closeModal" />
   </div>
 </template>
 
 <script>
+import { ref } from 'vue'
+import CarsModel from './CarsModel.vue'
+
 export default {
   name: 'PropertiesList',
+  components: {
+    CarsModel,
+  },
   props: {
     cars: {
       type: Array,
       required: true,
     },
   },
-  emits: ['view-details', 'delete-car'],
+  emits: ['delete-car'],
+  setup() {
+    const selectedCar = ref(null)
+    const openModal = (car) => {
+      selectedCar.value = car
+    }
+    const closeModal = () => {
+      selectedCar.value = null
+    }
+    return { selectedCar, openModal, closeModal }
+  },
 }
 </script>

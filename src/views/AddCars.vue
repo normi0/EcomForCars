@@ -252,7 +252,17 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore'
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  documentId,
+} from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { VMoney } from 'v-money3'
 
@@ -263,7 +273,7 @@ export default {
   setup(props, { emit }) {
     const router = useRouter()
     const car = ref({
-      make: '',
+      marke: '',
       model: '',
       year: '',
       price: '',
@@ -297,11 +307,19 @@ export default {
     // Fetch cars from Firestore
     const fetchCars = async () => {
       const user = auth.currentUser
-      if (!user) return
-
-      const carsCollection = collection(db, 'users', user.uid, 'cars')
-      const carsSnapshot = await getDocs(carsCollection)
-      cars.value = carsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      if (!user) {
+        alert('You must be logged in to view cars.')
+        return
+      }
+      const userDoc = await getDoc(doc(db, 'users', user.uid))
+      const carIds = userDoc.data()?.cars || []
+      if (carIds.length) {
+        const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
+        const carSnapshot = await getDocs(carQuery)
+        cars.value = carSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      } else {
+        cars.value = []
+      }
     }
 
     // Handle image upload
@@ -345,10 +363,11 @@ export default {
         }
 
         // Generate a unique document ID for the car
-        const carId = Date.now().toString()
+        const carRef = doc(collection(db, 'cars'))
+        const carId = carRef.id
 
         // Save car data to Firestore
-        await setDoc(doc(db, 'users', user.uid, 'cars', carId), {
+        await setDoc(carRef, {
           make: car.value.make,
           model: car.value.model,
           year: car.value.year,
@@ -361,6 +380,13 @@ export default {
           financing: car.value.financing,
           createdAt: new Date(),
         })
+
+        const userRef = doc(db, 'users', user.uid)
+        await setDoc(
+          userRef,
+          { carReferences: [...((await getDoc(userRef)).data()?.carReferences || []), carId] },
+          { merge: true },
+        )
 
         alert('Car added successfully!')
         emit('car-added') // Emit event to refresh the car list
@@ -382,8 +408,12 @@ export default {
         }
 
         // Delete the car document from Firestore
-        await deleteDoc(doc(db, 'users', user.uid, 'cars', carId))
-
+        await deleteDoc(doc(db, 'cars', carId))
+        // Update user car reference to remove this car ID
+        const userRef = doc(db, 'users', user.uid)
+        const userDoc = await getDoc(userRef)
+        const updatedReferences = userDoc.data().carReferences.filter((ref) => ref !== carId)
+        await setDoc(userRef, { carReferences: updatedReferences }, { merge: true })
         alert('Car deleted successfully!')
         emit('car-deleted') // Emit event to refresh the car list
         fetchCars() // Refresh the list of cars
