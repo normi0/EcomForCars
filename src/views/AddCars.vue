@@ -6,7 +6,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <!-- Make -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Make</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marke</label>
           <input
             v-model="car.make"
             type="text"
@@ -252,18 +252,17 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { auth, db } from '@/config/firebase'
 import {
+  collection,
   doc,
+  getDoc,
   setDoc,
   deleteDoc,
-  collection,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  documentId,
+  updateDoc,
+  arrayRemove,
 } from 'firebase/firestore'
-import { db, auth } from '@/config/firebase'
+import { useToast } from 'vue-toastification'
 import { VMoney } from 'v-money3'
 
 export default {
@@ -271,9 +270,10 @@ export default {
   directives: { money: VMoney },
   emits: ['car-added', 'car-deleted'],
   setup(props, { emit }) {
+    const toast = useToast()
     const router = useRouter()
     const car = ref({
-      marke: '',
+      make: '',
       model: '',
       year: '',
       price: '',
@@ -306,19 +306,29 @@ export default {
 
     // Fetch cars from Firestore
     const fetchCars = async () => {
-      const user = auth.currentUser
-      if (!user) {
-        alert('You must be logged in to view cars.')
-        return
-      }
-      const userDoc = await getDoc(doc(db, 'users', user.uid))
-      const carIds = userDoc.data()?.cars || []
-      if (carIds.length) {
-        const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
-        const carSnapshot = await getDocs(carQuery)
-        cars.value = carSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-      } else {
-        cars.value = []
+      try {
+        const user = auth.currentUser
+        if (!user) {
+          toast.error('You must be logged in to view cars.')
+          return
+        }
+
+        const userDoc = await getDoc(doc(db, 'users', user.uid))
+        const carReferences = userDoc.data()?.carReferences || []
+
+        if (carReferences.length > 0) {
+          const carDocs = await Promise.all(
+            carReferences.map((carId) => getDoc(doc(db, 'cars', carId))),
+          )
+          cars.value = carDocs
+            .filter((doc) => doc.exists())
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+        } else {
+          cars.value = []
+        }
+      } catch (error) {
+        console.error('Error fetching cars:', error)
+        toast.error('Failed to fetch cars')
       }
     }
 
@@ -358,7 +368,7 @@ export default {
       try {
         const user = auth.currentUser
         if (!user) {
-          alert('You must be logged in to add a car.')
+          toast.error('You must be logged in to add a car.')
           return
         }
 
@@ -388,13 +398,13 @@ export default {
           { merge: true },
         )
 
-        alert('Car added successfully!')
+        toast.success('Car added successfully!', { timeout: 3000 })
         emit('car-added') // Emit event to refresh the car list
         fetchCars() // Refresh the list of cars
-        router.push({ name: 'profile' }) // Redirect to profile page
+        router.push({ name: 'profile' }) // Redirect to profile page using named route
       } catch (error) {
         console.error('Error adding car:', error)
-        alert('Failed to add car')
+        toast.error('Failed to add car')
       }
     }
 
@@ -403,29 +413,36 @@ export default {
       try {
         const user = auth.currentUser
         if (!user) {
-          alert('You must be logged in to delete a car.')
+          toast.error('You must be logged in to delete a car.')
           return
         }
 
         // Delete the car document from Firestore
-        await deleteDoc(doc(db, 'cars', carId))
-        // Update user car reference to remove this car ID
+        const carRef = doc(db, 'cars', carId)
+        await deleteDoc(carRef)
+
+        // Update user's carReferences using arrayRemove
         const userRef = doc(db, 'users', user.uid)
-        const userDoc = await getDoc(userRef)
-        const updatedReferences = userDoc.data().carReferences.filter((ref) => ref !== carId)
-        await setDoc(userRef, { carReferences: updatedReferences }, { merge: true })
-        alert('Car deleted successfully!')
-        emit('car-deleted') // Emit event to refresh the car list
-        fetchCars() // Refresh the list of cars
+        await updateDoc(userRef, {
+          carReferences: arrayRemove(carId),
+        })
+
+        toast.success('Car deleted successfully!')
+        await fetchCars() // Refresh the list of cars
       } catch (error) {
         console.error('Error deleting car:', error)
-        alert('Failed to delete car')
+        toast.error('Failed to delete car: ' + error.message)
       }
     }
 
     // Fetch cars when the component is mounted
-    onMounted(() => {
-      fetchCars()
+    onMounted(async () => {
+      try {
+        await fetchCars()
+      } catch (error) {
+        console.error('Error fetching cars:', error)
+        toast.error('Failed to load cars')
+      }
     })
 
     return {

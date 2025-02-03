@@ -93,9 +93,9 @@
           </button>
           <!-- Wishlist Button -->
           <button
-            @click="mode = 'wishlist'"
+            @click="mode = 'wishList'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
-            :class="{ 'text-amber-500 dark:text-amber-500': mode === 'wishlist' }"
+            :class="{ 'text-amber-500 dark:text-amber-500': mode === 'wishList' }"
           >
             Wishlist
           </button>
@@ -124,16 +124,65 @@
       <div v-if="mode === 'addCars'">
         <AddCars @car-added="fetchUserCars" />
       </div>
-      <div v-else-if="mode === 'wishlist'">
-        <Wishlist />
+      <div v-else-if="mode === 'wishList'">
+        <WishList />
+      </div>
+      <div v-else-if="mode === 'properties'">
+        <Properties />
       </div>
       <div v-else-if="mode === 'purchaseHistory'">
         <PurchaseHistory />
       </div>
 
       <!-- Display User's Cars -->
-      <div v-if="mode === 'properties'">
-        <PropertiesList :cars="cars" @view-details="openModal" @delete-car="deleteCar" />
+      <div
+        v-if="mode === 'properties'"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        <div
+          v-for="car in cars"
+          :key="car.id"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+        >
+          <img
+            :src="car.imageUrl || '/src/assets/images/gray.avif'"
+            :alt="car.make + ' ' + car.model"
+            class="w-full h-48 object-cover"
+          />
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ car.make }} {{ car.model }}
+              </h3>
+              <button
+                @click="toggleFavorite(car)"
+                class="text-2xl focus:outline-none transition-colors duration-200"
+                :class="{
+                  'text-red-500': car.isFavorite,
+                  'text-gray-400 hover:text-red-500': !car.isFavorite,
+                }"
+              >
+                ♥
+              </button>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ car.year }}</p>
+            <p class="text-lg font-bold text-amber-500 mt-2">{{ car.price }}</p>
+            <div class="flex justify-between items-center mt-4">
+              <button
+                @click="deleteCar(car.id)"
+                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+              >
+                Delete
+              </button>
+              <button
+                @click="openModal(car)"
+                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -144,23 +193,23 @@
 <script>
 import { ref, onMounted } from 'vue'
 import {
-  collection,
-  query,
-  getDocs,
   doc,
   getDoc,
   setDoc,
   deleteDoc,
-  where,
-  documentId,
+  updateDoc,
+  arrayRemove,
+  arrayUnion,
 } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { updateProfile } from 'firebase/auth'
 import AddCars from './AddCars.vue'
-import Wishlist from '../views/WishList.vue'
+import WishList from '../views/WishList.vue'
 import PurchaseHistory from '../views/PerchaceHistory.vue'
 import CarModal from '../components/CarsModel.vue'
-import PropertiesList from '../components/ Properties.vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 // Example function to upload images to Cloudinary
 const uploadImage = async (file, uploadPreset, publicId = null) => {
@@ -190,10 +239,9 @@ export default {
   name: 'ProfileView',
   components: {
     AddCars,
-    Wishlist,
+    WishList,
     PurchaseHistory,
     CarModal,
-    PropertiesList,
   },
   methods: {
     // Delete car from Firestore
@@ -201,20 +249,59 @@ export default {
       try {
         const user = auth.currentUser
         if (!user) {
-          alert('You must be logged in to delete a car.')
+          toast.error('You must be logged in to delete a car.')
           return
         }
 
-        // Delete the car from Firestore
-        await deleteDoc(doc(db, 'users', user.uid, 'cars', carId))
+        // Delete the car document from Firestore
+        const carRef = doc(db, 'cars', carId)
+        await deleteDoc(carRef)
+
+        // Update user's carReferences using arrayRemove
+        const userRef = doc(db, 'users', user.uid)
+        await updateDoc(userRef, {
+          carReferences: arrayRemove(carId),
+        })
 
         // Remove the car from the local list
         this.cars = this.cars.filter((car) => car.id !== carId)
 
-        alert('Car deleted successfully!')
+        toast.success('Car deleted successfully!')
       } catch (error) {
         console.error('Error deleting car:', error)
-        alert('Failed to delete car')
+        toast.error('Failed to delete car: ' + error.message)
+      }
+    },
+    async toggleFavorite(car) {
+      try {
+        const user = auth.currentUser
+        if (!user) {
+          toast.error('You must be logged in to add favorites.')
+          return
+        }
+
+        const userRef = doc(db, 'users', user.uid)
+        const userDoc = await getDoc(userRef)
+        const favorites = userDoc.data()?.favorites || []
+
+        if (favorites.includes(car.id)) {
+          // Remove from favorites
+          await updateDoc(userRef, {
+            favorites: arrayRemove(car.id),
+          })
+          car.isFavorite = false
+          toast.success('Removed from favorites')
+        } else {
+          // Add to favorites
+          await updateDoc(userRef, {
+            favorites: arrayUnion(car.id),
+          })
+          car.isFavorite = true
+          toast.success('Added to favorites')
+        }
+      } catch (error) {
+        console.error('Error toggling favorite:', error)
+        toast.error('Failed to update favorites')
       }
     },
   },
@@ -270,7 +357,7 @@ export default {
         profilePhotoUrl.value = downloadURL
       } catch (error) {
         console.error('Error uploading profile photo:', error)
-        alert('Failed to upload profile photo')
+        toast.error('Failed to upload profile photo')
       }
     }
 
@@ -309,32 +396,38 @@ export default {
         console.log('Local state updated with new cover photo URL.')
       } catch (error) {
         console.error('Error uploading cover photo:', error)
-        alert('Failed to upload cover photo')
+        toast.error('Failed to upload cover photo')
         coverPhotoUrl.value = '/src/assets/images/gray.avif'
       }
     }
 
     // Fetch user's cars from Firestore
     const fetchUserCars = async () => {
-      const currentUser = auth.currentUser
-      if (!currentUser) return
-
       try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
-        const carIds = userDoc.data()?.carReferences || []
-        if (carIds.length) {
-          const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
-          const querySnapshot = await getDocs(carQuery)
-          cars.value = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
+        const user = auth.currentUser
+        if (!user) return
+
+        const userDoc = await getDoc(doc(db, 'users', user.uid))
+        const favorites = userDoc.data()?.favorites || []
+        const carReferences = userDoc.data()?.carReferences || []
+
+        if (carReferences.length > 0) {
+          const carDocs = await Promise.all(
+            carReferences.map((carId) => getDoc(doc(db, 'cars', carId))),
+          )
+          cars.value = carDocs
+            .filter((doc) => doc.exists())
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+              isFavorite: favorites.includes(doc.id),
+            }))
         } else {
           cars.value = []
         }
       } catch (error) {
         console.error('Error fetching user cars:', error)
-        alert('Failed to fetch user cars')
+        toast.error('Failed to fetch user cars')
       }
     }
 

@@ -11,9 +11,15 @@
           <div class="relative">
             <button
               @click="showSidebar = !showSidebar"
-              class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors overflow-hidden"
             >
-              <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+              <img
+                v-if="profilePhotoUrl"
+                :src="profilePhotoUrl"
+                :alt="userInitials"
+                class="w-full h-full object-cover"
+              />
+              <span v-else class="text-lg font-semibold text-gray-700 dark:text-gray-200">
                 {{ userInitials }}
               </span>
             </button>
@@ -81,7 +87,7 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
                   />
                   <path
                     stroke-linecap="round"
@@ -213,12 +219,16 @@
     <div class="container mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8">
         <div
-          v-for="product in products"
+          v-for="product in sortedCars"
           :key="product.id"
           class="bg-white/90 dark:bg-gray-800/50 backdrop-blur rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 shadow-lg"
         >
           <div class="relative">
-            <img :src="product.image" :alt="product.title" class="h-64 w-full object-cover" />
+            <img
+              :src="product.imageUrl || '/src/assets/images/default-car.jpg'"
+              :alt="product.title"
+              class="h-64 w-full object-cover"
+            />
             <span
               class="absolute top-4 right-4 bg-amber-500 text-black font-bold px-4 py-1 rounded-full"
             >
@@ -322,16 +332,16 @@
           <!-- Left Column - Always visible -->
           <div class="space-y-6">
             <img
-              :src="selectedProduct.image"
+              :src="selectedProduct.imageUrl || '/src/assets/images/default-car.jpg'"
               :alt="selectedProduct.title"
               class="w-full h-64 object-cover rounded-lg"
             />
 
             <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
               <div class="flex justify-between items-center mb-2">
-                <span class="text-2xl font-bold text-gray-900 dark:text-white">
-                  ${{ selectedProduct.price.toLocaleString() }}
-                </span>
+                <span class="text-2xl font-bold text-gray-900 dark:text-white"
+                  >${{ selectedProduct.price.toLocaleString() }}</span
+                >
                 <span class="text-amber-600 dark:text-amber-500 font-semibold">
                   {{ selectedProduct.year }}
                 </span>
@@ -605,15 +615,11 @@
 </template>
 <script>
 import { getAuth, signOut } from 'firebase/auth'
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import productsData from '@/data/products.json'
+import { doc, getDoc, collection, query, where, getDocs, documentId } from 'firebase/firestore'
+import { db } from '@/config/firebase'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-
-// Import images
-import alfaRomeo from '@/assets/images/alfa.webp'
-import mercedesAmg from '@/assets/images/mercedes.avif'
-import bmwM5 from '@/assets/images/bmw.avif'
 
 export default {
   name: 'HomeView',
@@ -622,28 +628,172 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const auth = getAuth()
     const showSidebar = ref(false)
-    const isScrolled = ref(false)
+    // const isScrolled = ref(false)
     const showFilterModal = ref(false)
     const showSortMenu = ref(false)
-    const auth = getAuth()
-    const user = auth.currentUser
-    const newFeature = ref('')
+
+    // User data refs
+    const user = ref(null)
+    const profilePhotoUrl = ref('/default-avatar.jpg')
+    const userDisplayName = ref('')
+    const userEmail = ref('')
+    const userCars = ref([])
+
+    // Cars data
+    const allCars = ref([])
+    const loading = ref(false)
     const filters = reactive({
       minPrice: '',
       maxPrice: '',
       brands: [],
       features: [],
     })
+
+    // Sort options
+    const sortOptions = [
+      { label: 'Price: Low to High', value: 'price-asc' },
+      { label: 'Price: High to Low', value: 'price-desc' },
+      { label: 'Brand: A to Z', value: 'brand-asc' },
+      { label: 'Brand: Z to A', value: 'brand-desc' },
+    ]
+    const currentSort = ref('price-asc')
+
+    // Fetch all cars from Firestore
+    const fetchAllCars = async () => {
+      loading.value = true
+      try {
+        const carsQuery = query(collection(db, 'cars'))
+        const querySnapshot = await getDocs(carsQuery)
+        allCars.value = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      } catch (error) {
+        console.error('Error fetching cars:', error)
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // Fetch user data from Firestore
+    const fetchUserData = async (currentUser) => {
+      if (!currentUser) return
+
+      const docRef = doc(db, 'users', currentUser.uid)
+      const docSnap = await getDoc(docRef)
+
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        profilePhotoUrl.value = data.photoURL || '/default-avatar.jpg'
+        userDisplayName.value = currentUser.displayName
+        userEmail.value = currentUser.email
+      }
+    }
+
+    // Fetch user's cars from Firestore
+    const fetchUserCars = async () => {
+      const currentUser = auth.currentUser
+      if (!currentUser) return
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
+        const carIds = userDoc.data()?.carReferences || []
+        if (carIds.length) {
+          const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
+          const querySnapshot = await getDocs(carQuery)
+          userCars.value = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        } else {
+          userCars.value = []
+        }
+      } catch (error) {
+        console.error('Error fetching user cars:', error)
+      }
+    }
+
+    // Filter and sort functions
+    const filteredCars = computed(() => {
+      return allCars.value.filter((car) => {
+        // Price filter
+        if (filters.minPrice && car.price < parseFloat(filters.minPrice)) return false
+        if (filters.maxPrice && car.price > parseFloat(filters.maxPrice)) return false
+
+        // Brand filter
+        if (filters.brands.length && !filters.brands.includes(car.brand)) return false
+
+        // Features filter
+        if (filters.features.length) {
+          const carFeatures = car.features || []
+          if (!filters.features.every((feature) => carFeatures.includes(feature))) return false
+        }
+
+        return true
+      })
+    })
+
+    const sortedCars = computed(() => {
+      const cars = [...filteredCars.value]
+      switch (currentSort.value) {
+        case 'price-asc':
+          return cars.sort((a, b) => a.price - b.price)
+        case 'price-desc':
+          return cars.sort((a, b) => b.price - a.price)
+        case 'brand-asc':
+          return cars.sort((a, b) => a.brand.localeCompare(b.brand))
+        case 'brand-desc':
+          return cars.sort((a, b) => b.brand.localeCompare(a.brand))
+        default:
+          return cars
+      }
+    })
+
+    // Get unique brands from all cars
+    const availableBrands = computed(() => {
+      const brands = new Set(allCars.value.map((car) => car.brand))
+      return Array.from(brands).sort()
+    })
+
+    // Get unique features from all cars
+    const availableFeatures = computed(() => {
+      const features = new Set()
+      allCars.value.forEach((car) => {
+        if (car.features) {
+          car.features.forEach((feature) => features.add(feature))
+        }
+      })
+      return Array.from(features).sort()
+    })
+
+    const sortProducts = (sortValue) => {
+      currentSort.value = sortValue
+      showSortMenu.value = false
+    }
+
+    onMounted(async () => {
+      const currentUser = auth.currentUser
+      if (currentUser) {
+        user.value = currentUser
+        await Promise.all([fetchUserData(currentUser), fetchUserCars(), fetchAllCars()])
+      } else {
+        await fetchAllCars()
+      }
+    })
+
+    // Other existing functions...
     const userInitials = computed(() => {
-      if (user && user.displayName) {
-        const nameParts = user.displayName.split(' ') //split displayed name into parts
+      if (userDisplayName.value) {
+        const nameParts = userDisplayName.value.split(' ')
         const firstNameInitial = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() : ''
         const lastNameInitial = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() : ''
         return `${firstNameInitial}${lastNameInitial}`
       }
       return 'DM'
     })
+
     const logout = async () => {
       try {
         await signOut(auth)
@@ -653,6 +803,8 @@ export default {
         console.error('Logout error:', error)
       }
     }
+
+    const newFeature = ref('')
     const toggleBrand = (brand) => {
       const index = filters.brands.indexOf(brand)
       if (index === -1) {
@@ -687,65 +839,6 @@ export default {
     const applyFilters = () => {
       // Implement your filtering logic here
       showFilterModal.value = false
-    }
-
-    const sortOptions = [
-      { label: 'Price: Low to High', value: 'price-asc' },
-      { label: 'Price: High to Low', value: 'price-desc' },
-      { label: 'Name: A to Z', value: 'name-asc' },
-      { label: 'Name: Z to A', value: 'name-desc' },
-    ]
-
-    // Map the products with the correct image imports
-    const products = ref(
-      productsData.products.map((product) => ({
-        ...product,
-        image: product.id === 1 ? alfaRomeo : product.id === 2 ? mercedesAmg : bmwM5,
-      })),
-    )
-
-    const filteredProducts = computed(() => {
-      return products.value.filter((product) => {
-        if (filters.minPrice && product.price < filters.minPrice) return false
-        if (filters.maxPrice && product.price > filters.maxPrice) return false
-        if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false
-        if (
-          filters.features.length > 0 &&
-          !filters.features.every((feature) => product.features.includes(feature))
-        )
-          return false
-        return true
-      })
-    })
-
-    const sortProducts = (sortBy) => {
-      const sorted = [...products.value]
-      switch (sortBy) {
-        case 'price-asc':
-          sorted.sort((a, b) => a.price - b.price)
-          break
-        case 'price-desc':
-          sorted.sort((a, b) => b.price - a.price)
-          break
-        case 'name-asc':
-          sorted.sort((a, b) => a.name.localeCompare(b.name))
-          break
-        case 'name-desc':
-          sorted.sort((a, b) => b.name.localeCompare(a.name))
-          break
-      }
-      products.value = sorted
-      showSortMenu.value = false
-    }
-
-    const handleScroll = () => {
-      isScrolled.value = window.scrollY > 0
-    }
-
-    window.addEventListener('scroll', handleScroll)
-
-    const cleanup = () => {
-      window.removeEventListener('scroll', handleScroll)
     }
 
     const showModal = ref(false)
@@ -792,40 +885,24 @@ export default {
       return Math.round(payment)
     }
 
-    // Get unique brands from products
-    const availableBrands = computed(() => [...new Set(products.value.map((p) => p.brand))])
-
-    // Generate year range
-    const availableYears = computed(() => {
-      const years = []
-      for (let year = 2020; year <= 2024; year++) {
-        years.push(year)
-      }
-      return years
-    })
-
-    // Get common features from all products
-    const commonFeatures = computed(() => {
-      const features = new Set()
-      products.value.forEach((product) => {
-        product.features.forEach((feature) => {
-          features.add(feature)
-        })
-      })
-      return Array.from(features)
-    })
-
     return {
-      products: filteredProducts,
       showSidebar,
-      isScrolled,
-      userInitials,
-      logout,
-      cleanup,
-      showFilterModal,
       showSortMenu,
+      showFilterModal,
+      userInitials,
+      profilePhotoUrl,
+      userDisplayName,
+      userEmail,
+      userCars,
+      allCars,
+      filteredCars,
+      sortedCars,
+      loading,
       filters,
       sortOptions,
+      currentSort,
+      availableBrands,
+      availableFeatures,
       sortProducts,
       applyFilters,
       showModal,
@@ -837,14 +914,12 @@ export default {
       activeTab,
       tabs,
       calculateMonthlyPayment,
-      availableBrands,
-      availableYears,
-      commonFeatures,
       resetFilters,
       newFeature,
       toggleBrand,
       addFeature,
       removeFeature,
+      logout,
     }
   },
 }
