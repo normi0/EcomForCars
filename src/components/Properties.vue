@@ -12,7 +12,7 @@
           <img :src="car.imageUrl" :alt="car.make" class="h-64 w-full object-cover" />
           <div class="absolute top-4 right-4 flex gap-2">
             <button
-              @click="handleToggleFavorite(product)"
+              @click="toggleFavorite"
               class="absolute top-4 left-4 bg-gray-200 dark:bg-gray-700 rounded-full p-2 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               <svg

@@ -85,7 +85,12 @@
         <div class="flex flex-col sm:flex-row justify-start gap-6 py-3">
           <!-- Add Cars Button -->
           <button
-            @click="mode = 'addCars'"
+            @click="
+              () => {
+                mode = 'addCars'
+                $router.push('/profile/#addCars')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'addCars' }"
           >
@@ -93,7 +98,12 @@
           </button>
           <!-- Favorit Button -->
           <button
-            @click="mode = 'FavoritView'"
+            @click="
+              () => {
+                mode = 'FavoritView'
+                $router.push('/profile/#FavoritView')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'FavoritView' }"
           >
@@ -101,7 +111,12 @@
           </button>
           <!-- Properties Button -->
           <button
-            @click="mode = 'properties'"
+            @click="
+              () => {
+                mode = 'properties'
+                $router.push('/profile/#properties')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'properties' }"
           >
@@ -109,7 +124,12 @@
           </button>
           <!-- Purchase History Button -->
           <button
-            @click="mode = 'purchaseHistory'"
+            @click="
+              () => {
+                mode = 'purchaseHistory'
+                $router.push('/profile/#purchaseHistory')
+              }
+            "
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'purchaseHistory' }"
           >
@@ -201,7 +221,7 @@ import PurchaseHistory from '../views/PerchaceHistory.vue'
 import CarModal from '../components/CarsModel.vue'
 import { useToast } from 'vue-toastification'
 import { toggleFavorite, deleteCar } from '@/utils/firebaseUtils'
-
+import { useRoute } from 'vue-router'
 const toast = useToast()
 
 // Example function to upload images to Cloudinary
@@ -264,11 +284,13 @@ export default {
     const coverPhotoUrl = ref('')
     const userDisplayName = ref('')
     const userEmail = ref('')
-    const mode = ref('properties') // Set default mode to 'properties'
+    const router = useRoute()
+    const mode = ref(router.hash.slice(1) ?? 'properties') // Set default mode to 'properties'
     const cars = ref([])
     const showModal = ref(false)
     const selectedCar = ref(null)
 
+    console.log('router: ', router)
     // Fetch user data from Firestore
     const fetchUserData = async (currentUser) => {
       const docRef = doc(db, 'users', currentUser.uid)
