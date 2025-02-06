@@ -54,7 +54,7 @@ const router = createRouter({
     {
       path: '/wishList',
       name: 'wishList',
-      component: () => import('../views/WishList.vue'),
+      component: () => import('../views/Favorit.vue'),
       meta: { requiresAuth: true },
     },
     {

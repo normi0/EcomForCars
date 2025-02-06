@@ -44,7 +44,7 @@
 
     <div v-else class="text-center py-12">
       <div class="text-gray-500 dark:text-gray-400">
-        <p class="text-xl mb-4">Your wishlist is empty</p>
+        <p class="text-xl mb-4">Your wishlist</p>
         <p class="text-sm">Add cars to your wishlist by clicking the heart icon on any car.</p>
       </div>
     </div>
@@ -52,13 +52,13 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { auth, db } from '@/config/firebase'
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore'
 
 export default {
-  name: 'WishList',
+  name: 'FavoritView',
   setup() {
     const toast = useToast()
     const favoritesCars = ref([])
@@ -69,7 +69,9 @@ export default {
         if (!user) return
 
         const userDoc = await getDoc(doc(db, 'users', user.uid))
+        console.log('user data: ', userDoc)
         const favorites = userDoc.data()?.favorites || []
+        console.log('user favorite: ', favorites)
 
         if (favorites.length > 0) {
           const carDocs = await Promise.all(
@@ -118,14 +120,13 @@ export default {
       console.log('View details for car:', car)
     }
 
-    onMounted(() => {
-      fetchFavoriteCars()
-    })
-
+    const favCars = fetchFavoriteCars()
+    console.log('fav cars: ', favCars)
     return {
       favoritesCars,
       removeFromFavorites,
       viewDetails,
+      favCars,
     }
   },
 }

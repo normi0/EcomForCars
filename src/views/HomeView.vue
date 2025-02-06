@@ -234,6 +234,39 @@
             >
               {{ product.year }}
             </span>
+            <button
+              @click="handleToggleFavorite(product)"
+              class="absolute top-4 left-4 bg-gray-200 dark:bg-gray-700 rounded-full p-2 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              <svg
+                v-if="product.isFavorite"
+                class="w-5 h-5 text-red-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              <svg
+                v-else
+                class="w-5 h-5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+            </button>
           </div>
 
           <div class="p-6">
@@ -260,9 +293,9 @@
             <p class="text-gray-600 dark:text-gray-300 mb-6">{{ product.description }}</p>
 
             <div class="flex justify-between items-center">
-              <span class="text-2xl font-bold text-gray-900 dark:text-white"
-                >${{ product.price.toLocaleString() }}</span
-              >
+              <span class="text-2xl font-bold text-gray-900 dark:text-white">{{
+                product.price.toLocaleString()
+              }}</span>
               <button
                 @click="openPurchaseModal(product)"
                 class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
@@ -420,6 +453,7 @@
                   </div>
                 </div>
               </div>
+              q
             </div>
 
             <!-- Contact Form Tab -->
@@ -614,11 +648,13 @@
   </div>
 </template>
 <script>
-import { getAuth, signOut } from 'firebase/auth'
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { doc, getDoc, collection, query, where, getDocs, documentId } from 'firebase/firestore'
+import { getAuth, signOut } from 'firebase/auth'
+import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore'
 import { db } from '@/config/firebase'
+import { useToast } from 'vue-toastification'
+import { toggleFavorite, deleteCar } from '@/utils/firebaseUtils'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
 export default {
@@ -628,22 +664,19 @@ export default {
   },
   setup() {
     const router = useRouter()
-    const auth = getAuth()
+    const toast = useToast()
     const showSidebar = ref(false)
-    // const isScrolled = ref(false)
     const showFilterModal = ref(false)
     const showSortMenu = ref(false)
-
-    // User data refs
-    const user = ref(null)
-    const profilePhotoUrl = ref('/default-avatar.jpg')
-    const userDisplayName = ref('')
-    const userEmail = ref('')
-    const userCars = ref([])
-
-    // Cars data
+    const isScrolled = ref(false)
     const allCars = ref([])
+    const selectedProduct = ref(null)
+    const showModal = ref(false)
+    const profilePhotoUrl = ref('')
+    const userInitials = ref('')
     const loading = ref(false)
+
+    // Filter states
     const filters = reactive({
       minPrice: '',
       maxPrice: '',
@@ -651,86 +684,73 @@ export default {
       features: [],
     })
 
-    // Sort options
-    const sortOptions = [
-      { label: 'Price: Low to High', value: 'price-asc' },
-      { label: 'Price: High to Low', value: 'price-desc' },
-      { label: 'Brand: A to Z', value: 'brand-asc' },
-      { label: 'Brand: Z to A', value: 'brand-desc' },
-    ]
-    const currentSort = ref('price-asc')
+    // Form state
+    const purchaseForm = reactive({
+      name: '',
+      email: '',
+      phone: '',
+      preferredTime: '',
+      message: '',
+    })
 
-    // Fetch all cars from Firestore
-    const fetchAllCars = async () => {
+    const fetchCars = async () => {
       loading.value = true
       try {
         const carsQuery = query(collection(db, 'cars'))
         const querySnapshot = await getDocs(carsQuery)
+        const user = getAuth().currentUser
+
+        // If user is logged in, fetch their favorites
+        let userFavorites = []
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid))
+          userFavorites = userDoc.data()?.favorites || []
+        }
+
         allCars.value = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
+          isFavorite: userFavorites.includes(doc.id),
         }))
       } catch (error) {
         console.error('Error fetching cars:', error)
+        toast.error('Failed to load cars')
       } finally {
         loading.value = false
       }
     }
 
-    // Fetch user data from Firestore
-    const fetchUserData = async (currentUser) => {
-      if (!currentUser) return
-
-      const docRef = doc(db, 'users', currentUser.uid)
-      const docSnap = await getDoc(docRef)
-
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        profilePhotoUrl.value = data.photoURL || '/default-avatar.jpg'
-        userDisplayName.value = currentUser.displayName
-        userEmail.value = currentUser.email
+    const handleToggleFavorite = async (car) => {
+      try {
+        await toggleFavorite(car.id, car.isFavorite)
+        car.isFavorite = !car.isFavorite
+        toast.success(car.isFavorite ? 'Added to wishlist' : 'Removed from wishlist')
+      } catch (error) {
+        toast.error(error.message || 'Failed to update wishlist')
       }
     }
 
-    // Fetch user's cars from Firestore
-    const fetchUserCars = async () => {
-      const currentUser = auth.currentUser
-      if (!currentUser) return
-
+    const handleDeleteCar = async (carId) => {
       try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
-        const carIds = userDoc.data()?.carReferences || []
-        if (carIds.length) {
-          const carQuery = query(collection(db, 'cars'), where(documentId(), 'in', carIds))
-          const querySnapshot = await getDocs(carQuery)
-          userCars.value = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-        } else {
-          userCars.value = []
-        }
+        await deleteCar(carId)
+        // Remove car from local state
+        allCars.value = allCars.value.filter((car) => car.id !== carId)
+        toast.success('Car removed successfully')
       } catch (error) {
-        console.error('Error fetching user cars:', error)
+        toast.error(error.message || 'Failed to delete car')
       }
     }
 
     // Filter and sort functions
     const filteredCars = computed(() => {
       return allCars.value.filter((car) => {
-        // Price filter
         if (filters.minPrice && car.price < parseFloat(filters.minPrice)) return false
         if (filters.maxPrice && car.price > parseFloat(filters.maxPrice)) return false
-
-        // Brand filter
         if (filters.brands.length && !filters.brands.includes(car.brand)) return false
-
-        // Features filter
         if (filters.features.length) {
           const carFeatures = car.features || []
           if (!filters.features.every((feature) => carFeatures.includes(feature))) return false
         }
-
         return true
       })
     })
@@ -751,80 +771,31 @@ export default {
       }
     })
 
-    // Get unique brands from all cars
-    const availableBrands = computed(() => {
-      const brands = new Set(allCars.value.map((car) => car.brand))
-      return Array.from(brands).sort()
-    })
-
-    // Get unique features from all cars
-    const availableFeatures = computed(() => {
-      const features = new Set()
-      allCars.value.forEach((car) => {
-        if (car.features) {
-          car.features.forEach((feature) => features.add(feature))
-        }
-      })
-      return Array.from(features).sort()
-    })
-
-    const sortProducts = (sortValue) => {
-      currentSort.value = sortValue
-      showSortMenu.value = false
+    // Modal functions
+    const openPurchaseModal = (product) => {
+      selectedProduct.value = product
+      showModal.value = true
+      document.body.classList.add('modal-open')
     }
 
-    onMounted(async () => {
-      const currentUser = auth.currentUser
-      if (currentUser) {
-        user.value = currentUser
-        await Promise.all([fetchUserData(currentUser), fetchUserCars(), fetchAllCars()])
-      } else {
-        await fetchAllCars()
-      }
-    })
-
-    // Other existing functions...
-    const userInitials = computed(() => {
-      if (userDisplayName.value) {
-        const nameParts = userDisplayName.value.split(' ')
-        const firstNameInitial = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() : ''
-        const lastNameInitial = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() : ''
-        return `${firstNameInitial}${lastNameInitial}`
-      }
-      return 'DM'
-    })
-
-    const logout = async () => {
-      try {
-        await signOut(auth)
-        console.log('Logged out successfully')
-        router.push('/login')
-      } catch (error) {
-        console.error('Logout error:', error)
-      }
+    const closeModal = () => {
+      showModal.value = false
+      document.body.classList.remove('modal-open')
+      Object.keys(purchaseForm).forEach((key) => (purchaseForm[key] = ''))
     }
 
-    const newFeature = ref('')
+    const submitPurchase = () => {
+      console.log('Form submitted:', purchaseForm)
+      closeModal()
+    }
+
+    // Filter functions
     const toggleBrand = (brand) => {
       const index = filters.brands.indexOf(brand)
       if (index === -1) {
         filters.brands.push(brand)
       } else {
         filters.brands.splice(index, 1)
-      }
-    }
-
-    const addFeature = () => {
-      if (newFeature.value.trim() && !filters.features.includes(newFeature.value.trim())) {
-        filters.features.push(newFeature.value.trim())
-        newFeature.value = ''
-      }
-    }
-
-    const removeFeature = (feature) => {
-      const index = filters.features.indexOf(feature)
-      if (index !== -1) {
-        filters.features.splice(index, 1)
       }
     }
 
@@ -837,40 +808,52 @@ export default {
     }
 
     const applyFilters = () => {
-      // Implement your filtering logic here
       showFilterModal.value = false
     }
 
-    const showModal = ref(false)
-    const selectedProduct = ref(null)
-    const purchaseForm = reactive({
-      name: '',
-      email: '',
-      phone: '',
-      preferredTime: '',
-      message: '',
+    onMounted(async () => {
+      await fetchCars()
+
+      window.addEventListener('scroll', () => {
+        isScrolled.value = window.scrollY > 0
+      })
+
+      const user = getAuth().currentUser
+      if (user) {
+        profilePhotoUrl.value = user.photoURL || ''
+        if (user.displayName) {
+          const names = user.displayName.split(' ')
+          userInitials.value = names
+            .map((n) => n[0])
+            .join('')
+            .toUpperCase()
+        } else {
+          userInitials.value = user.email[0].toUpperCase()
+        }
+      }
     })
 
-    const openPurchaseModal = (product) => {
-      selectedProduct.value = product
-      showModal.value = true
-      document.body.classList.add('modal-open')
+    const logout = async () => {
+      try {
+        await signOut(getAuth())
+        router.push('/login')
+      } catch (error) {
+        console.error('Error signing out:', error)
+        toast.error('Failed to sign out')
+      }
     }
 
-    const closeModal = () => {
-      showModal.value = false
-      document.body.classList.remove('modal-open')
-      // Reset form
-      Object.keys(purchaseForm).forEach((key) => (purchaseForm[key] = ''))
-    }
-
-    const submitPurchase = () => {
-      // Add your form submission logic here
-      console.log('Form submitted:', purchaseForm)
-      closeModal()
-    }
-
+    const currentSort = ref('price-asc')
+    const newFeature = ref('')
     const activeTab = ref('details')
+
+    const sortOptions = [
+      { label: 'Price: Low to High', value: 'price-asc' },
+      { label: 'Price: High to Low', value: 'price-desc' },
+      { label: 'Brand: A to Z', value: 'brand-asc' },
+      { label: 'Brand: Z to A', value: 'brand-desc' },
+    ]
+
     const tabs = [
       { id: 'details', name: 'Vehicle Details' },
       { id: 'financing', name: 'Financing' },
@@ -879,46 +862,56 @@ export default {
 
     const calculateMonthlyPayment = (price, months, apr = 4.99) => {
       const principal = price
-      const rate = apr / 1200 // Monthly interest rate
+      const rate = apr / 1200
       const n = months
       const payment = (principal * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1)
       return Math.round(payment)
     }
 
+    const availableBrands = computed(() => {
+      const brands = new Set(allCars.value.map((car) => car.brand))
+      return Array.from(brands).sort()
+    })
+
     return {
+      // UI states
       showSidebar,
       showSortMenu,
       showFilterModal,
-      userInitials,
-      profilePhotoUrl,
-      userDisplayName,
-      userEmail,
-      userCars,
+      showModal,
+      isScrolled,
+      loading,
+
+      // Data
       allCars,
       filteredCars,
       sortedCars,
-      loading,
-      filters,
-      sortOptions,
-      currentSort,
-      availableBrands,
-      availableFeatures,
-      sortProducts,
-      applyFilters,
-      showModal,
       selectedProduct,
+      profilePhotoUrl,
+      userInitials,
+
+      // Form and filters
+      filters,
       purchaseForm,
+      activeTab,
+      currentSort,
+      newFeature,
+
+      // Options and computed
+      sortOptions,
+      availableBrands,
+      tabs,
+
+      // Functions
+      handleToggleFavorite,
+      handleDeleteCar,
       openPurchaseModal,
       closeModal,
       submitPurchase,
-      activeTab,
-      tabs,
-      calculateMonthlyPayment,
-      resetFilters,
-      newFeature,
       toggleBrand,
-      addFeature,
-      removeFeature,
+      resetFilters,
+      applyFilters,
+      calculateMonthlyPayment,
       logout,
     }
   },

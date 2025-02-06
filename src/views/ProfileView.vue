@@ -91,13 +91,13 @@
           >
             Add Cars
           </button>
-          <!-- Wishlist Button -->
+          <!-- Favorit Button -->
           <button
-            @click="mode = 'wishList'"
+            @click="mode = 'FavoritView'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
-            :class="{ 'text-amber-500 dark:text-amber-500': mode === 'wishList' }"
+            :class="{ 'text-amber-500 dark:text-amber-500': mode === 'FavoritView' }"
           >
-            Wishlist
+            Favorit
           </button>
           <!-- Properties Button -->
           <button
@@ -124,8 +124,8 @@
       <div v-if="mode === 'addCars'">
         <AddCars @car-added="fetchUserCars" />
       </div>
-      <div v-else-if="mode === 'wishList'">
-        <WishList />
+      <div v-else-if="mode === 'FavoritView'">
+        <FavoritView />
       </div>
       <div v-else-if="mode === 'properties'">
         <Properties />
@@ -155,7 +155,7 @@
                 {{ car.make }} {{ car.model }}
               </h3>
               <button
-                @click="toggleFavorite(car)"
+                @click="handleToggleFavorite(car)"
                 class="text-2xl focus:outline-none transition-colors duration-200"
                 :class="{
                   'text-red-500': car.isFavorite,
@@ -169,7 +169,7 @@
             <p class="text-lg font-bold text-amber-500 mt-2">{{ car.price }}</p>
             <div class="flex justify-between items-center mt-4">
               <button
-                @click="deleteCar(car.id)"
+                @click="handleDeleteCar(car.id)"
                 class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
                 Delete
@@ -192,22 +192,15 @@
 </template>
 <script>
 import { ref, onMounted } from 'vue'
-import {
-  doc,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  updateDoc,
-  arrayRemove,
-  arrayUnion,
-} from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { updateProfile } from 'firebase/auth'
 import AddCars from './AddCars.vue'
-import WishList from '../views/WishList.vue'
+import FavoritView from './Favorit.vue'
 import PurchaseHistory from '../views/PerchaceHistory.vue'
 import CarModal from '../components/CarsModel.vue'
 import { useToast } from 'vue-toastification'
+import { toggleFavorite, deleteCar } from '@/utils/firebaseUtils'
 
 const toast = useToast()
 
@@ -239,69 +232,29 @@ export default {
   name: 'ProfileView',
   components: {
     AddCars,
-    WishList,
+    FavoritView,
     PurchaseHistory,
     CarModal,
   },
   methods: {
     // Delete car from Firestore
-    async deleteCar(carId) {
+    async handleDeleteCar(carId) {
       try {
-        const user = auth.currentUser
-        if (!user) {
-          toast.error('You must be logged in to delete a car.')
-          return
-        }
-
-        // Delete the car document from Firestore
-        const carRef = doc(db, 'cars', carId)
-        await deleteDoc(carRef)
-
-        // Update user's carReferences using arrayRemove
-        const userRef = doc(db, 'users', user.uid)
-        await updateDoc(userRef, {
-          carReferences: arrayRemove(carId),
-        })
-
-        // Remove the car from the local list
+        await deleteCar(carId)
+        // Remove car from local state
         this.cars = this.cars.filter((car) => car.id !== carId)
-
-        toast.success('Car deleted successfully!')
+        toast.success('Car removed successfully')
       } catch (error) {
-        console.error('Error deleting car:', error)
-        toast.error('Failed to delete car: ' + error.message)
+        toast.error(error.message || 'Failed to delete car')
       }
     },
-    async toggleFavorite(car) {
+    async handleToggleFavorite(car) {
       try {
-        const user = auth.currentUser
-        if (!user) {
-          toast.error('You must be logged in to add favorites.')
-          return
-        }
-
-        const userRef = doc(db, 'users', user.uid)
-        const userDoc = await getDoc(userRef)
-        const favorites = userDoc.data()?.favorites || []
-
-        if (favorites.includes(car.id)) {
-          // Remove from favorites
-          await updateDoc(userRef, {
-            favorites: arrayRemove(car.id),
-          })
-          car.isFavorite = false
-          toast.success('Removed from favorites')
-        } else {
-          // Add to favorites
-          await updateDoc(userRef, {
-            favorites: arrayUnion(car.id),
-          })
-          car.isFavorite = true
-          toast.success('Added to favorites')
-        }
+        await toggleFavorite(car.id, car.isFavorite)
+        car.isFavorite = !car.isFavorite
+        toast.success(car.isFavorite ? 'Added to Favorit' : 'Removed from Favorit')
       } catch (error) {
-        console.error('Error toggling favorite:', error)
-        toast.error('Failed to update favorites')
+        toast.error(error.message || 'Failed to update Favorit')
       }
     },
   },
