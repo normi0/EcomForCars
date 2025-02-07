@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div id="addCars" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add a New Car</h1>
     <form @submit.prevent="submitCar">
       <!-- Existing form fields for adding a car -->
