@@ -453,7 +453,6 @@
                   </div>
                 </div>
               </div>
-              q
             </div>
 
             <!-- Contact Form Tab -->
@@ -654,8 +653,9 @@ import { getAuth, signOut } from 'firebase/auth'
 import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import { useToast } from 'vue-toastification'
-import { toggleFavorite, deleteCar } from '@/utils/firebaseUtils'
+import { deleteCar } from '@/utils/firebaseUtils'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import { useCarFunctions } from '@/utils/useCarFunctions'
 
 export default {
   name: 'HomeView',
@@ -669,12 +669,19 @@ export default {
     const showFilterModal = ref(false)
     const showSortMenu = ref(false)
     const isScrolled = ref(false)
-    const allCars = ref([])
-    const selectedProduct = ref(null)
-    const showModal = ref(false)
+    const cars = ref([])
+    const sortBy = ref('price-asc')
     const profilePhotoUrl = ref('')
     const userInitials = ref('')
     const loading = ref(false)
+    const {
+      sortedCars,
+      handleToggleFavorite,
+      openPurchaseModal,
+      closeModal,
+      selectedProduct,
+      showModal,
+    } = useCarFunctions(cars, sortBy)
 
     // Filter states
     const filters = reactive({
@@ -707,7 +714,7 @@ export default {
           userFavorites = userDoc.data()?.favorites || []
         }
 
-        allCars.value = querySnapshot.docs.map((doc) => ({
+        cars.value = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           isFavorite: userFavorites.includes(doc.id),
@@ -720,21 +727,11 @@ export default {
       }
     }
 
-    const handleToggleFavorite = async (car) => {
-      try {
-        await toggleFavorite(car.id, car.isFavorite)
-        car.isFavorite = !car.isFavorite
-        toast.success(car.isFavorite ? 'Added to wishlist' : 'Removed from wishlist')
-      } catch (error) {
-        toast.error(error.message || 'Failed to update wishlist')
-      }
-    }
-
     const handleDeleteCar = async (carId) => {
       try {
         await deleteCar(carId)
         // Remove car from local state
-        allCars.value = allCars.value.filter((car) => car.id !== carId)
+        cars.value = cars.value.filter((car) => car.id !== carId)
         toast.success('Car removed successfully')
       } catch (error) {
         toast.error(error.message || 'Failed to delete car')
@@ -743,7 +740,7 @@ export default {
 
     // Filter and sort functions
     const filteredCars = computed(() => {
-      return allCars.value.filter((car) => {
+      return cars.value.filter((car) => {
         if (filters.minPrice && car.price < parseFloat(filters.minPrice)) return false
         if (filters.maxPrice && car.price > parseFloat(filters.maxPrice)) return false
         if (filters.brands.length && !filters.brands.includes(car.brand)) return false
@@ -755,34 +752,7 @@ export default {
       })
     })
 
-    const sortedCars = computed(() => {
-      const cars = [...filteredCars.value]
-      switch (currentSort.value) {
-        case 'price-asc':
-          return cars.sort((a, b) => a.price - b.price)
-        case 'price-desc':
-          return cars.sort((a, b) => b.price - a.price)
-        case 'brand-asc':
-          return cars.sort((a, b) => a.brand.localeCompare(b.brand))
-        case 'brand-desc':
-          return cars.sort((a, b) => b.brand.localeCompare(a.brand))
-        default:
-          return cars
-      }
-    })
-
     // Modal functions
-    const openPurchaseModal = (product) => {
-      selectedProduct.value = product
-      showModal.value = true
-      document.body.classList.add('modal-open')
-    }
-
-    const closeModal = () => {
-      showModal.value = false
-      document.body.classList.remove('modal-open')
-      Object.keys(purchaseForm).forEach((key) => (purchaseForm[key] = ''))
-    }
 
     const submitPurchase = () => {
       console.log('Form submitted:', purchaseForm)
@@ -869,7 +839,7 @@ export default {
     }
 
     const availableBrands = computed(() => {
-      const brands = new Set(allCars.value.map((car) => car.brand))
+      const brands = new Set(cars.value.map((car) => car.brand))
       return Array.from(brands).sort()
     })
 
@@ -883,7 +853,7 @@ export default {
       loading,
 
       // Data
-      allCars,
+      cars,
       filteredCars,
       sortedCars,
       selectedProduct,
@@ -913,6 +883,8 @@ export default {
       applyFilters,
       calculateMonthlyPayment,
       logout,
+
+      sortBy,
     }
   },
 }

@@ -232,6 +232,7 @@
                 </div>
               </div>
             </div>
+            q
           </div>
 
           <!-- Contact Form Tab -->
@@ -294,52 +295,61 @@
 </template>
 
 <script>
-import { useCarFunctions } from '@/utils/useCarFunctions' // Adjust the import path as needed
 import { ref } from 'vue'
-
+import { toast } from '@/helpers/toast'
+import { toggleFavorite } from '@/services/cars'
 export default {
-  props: {
-    cars: {
-      type: Array,
-      required: true,
-    },
-    sortBy: {
-      type: String,
-      default: 'price',
-    },
-  },
-  setup(props) {
-    const activeTab = ref('details')
-    const tabs = [
-      { id: 'details', name: 'Vehicle Details' },
-      { id: 'financing', name: 'Financing' },
-      { id: 'contact', name: 'Contact' },
-    ]
-    const {
-      sortedCars,
-      handleToggleFavorite,
-      openPurchaseModal,
-      closeModal,
-      selectedProduct,
-      purchaseForm,
-      showModal,
-      calculateMonthlyPayment,
-      submitPurchase,
-    } = useCarFunctions(ref(props.cars), ref(props.sortBy))
-
+  setup() {
+    const selectedProduct = ref(null)
+    const showModal = ref(false)
+    const purchaseForm = ref({
+      name: '',
+      email: '',
+      phone: '',
+      message: '',
+    })
+    const handleToggleFavorite = async (car) => {
+      try {
+        await toggleFavorite(car.id, car.isFavorite)
+        car.isFavorite = !car.isFavorite
+        toast.success(car.isFavorite ? 'Added to wishlist' : 'Removed from wishlist')
+      } catch (error) {
+        toast.error(error.message || 'Failed to update wishlist')
+      }
+    }
+    const calculateMonthlyPayment = (price, months, apr = 4.99) => {
+      const principal = price
+      const rate = apr / 1200
+      const n = months
+      const payment = (principal * (rate * Math.pow(1 + rate, n))) / (Math.pow(1 + rate, n) - 1)
+      return Math.round(payment)
+    }
+    const openPurchaseModal = (product) => {
+      selectedProduct.value = product
+      showModal.value = true
+      document.body.classList.add('modal-open')
+    }
+    const closeModal = () => {
+      showModal.value = false
+      document.body.classList.remove('modal-open')
+      Object.keys(purchaseForm).forEach((key) => (purchaseForm[key] = ''))
+    }
+    const submitPurchase = () => {
+      console.log('Form submitted:', purchaseForm)
+      closeModal()
+    }
     return {
-      sortedCars,
-      purchaseForm,
       handleToggleFavorite,
-      calculateMonthlyPayment,
       openPurchaseModal,
-      closeModal,
+      calculateMonthlyPayment,
       selectedProduct,
       showModal,
-      activeTab,
+      closeModal,
+      purchaseForm,
       submitPurchase,
-      tabs,
     }
   },
 }
 </script>
+
+<style lang="scss" scoped></style>

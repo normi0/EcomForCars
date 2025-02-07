@@ -85,12 +85,7 @@
         <div class="flex flex-col sm:flex-row justify-start gap-6 py-3">
           <!-- Add Cars Button -->
           <button
-            @click="
-              () => {
-                mode = 'addCars'
-                $router.push('/profile/#addCars')
-              }
-            "
+            @click="mode = 'addCars'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'addCars' }"
           >
@@ -98,12 +93,7 @@
           </button>
           <!-- Favorit Button -->
           <button
-            @click="
-              () => {
-                mode = 'FavoritView'
-                $router.push('/profile/#FavoritView')
-              }
-            "
+            @click="mode = 'FavoritView'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'FavoritView' }"
           >
@@ -111,12 +101,7 @@
           </button>
           <!-- Properties Button -->
           <button
-            @click="
-              () => {
-                mode = 'properties'
-                $router.push('/profile/#properties')
-              }
-            "
+            @click="mode = 'PropertiesList'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'properties' }"
           >
@@ -124,12 +109,7 @@
           </button>
           <!-- Purchase History Button -->
           <button
-            @click="
-              () => {
-                mode = 'purchaseHistory'
-                $router.push('/profile/#purchaseHistory')
-              }
-            "
+            @click="mode = 'purchaseHistory'"
             class="text-gray-700 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-500 font-medium transition-colors"
             :class="{ 'text-amber-500 dark:text-amber-500': mode === 'purchaseHistory' }"
           >
@@ -147,81 +127,29 @@
       <div v-else-if="mode === 'FavoritView'">
         <FavoritView />
       </div>
-      <div v-else-if="mode === 'properties'">
-        <Properties />
+      <div v-else-if="mode === 'PropertiesList'">
+        <PropertiesList :cars="cars" />
       </div>
       <div v-else-if="mode === 'purchaseHistory'">
         <PurchaseHistory />
       </div>
-
-      <!-- Display User's Cars -->
-      <div
-        v-if="mode === 'properties'"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        <div
-          v-for="car in cars"
-          :key="car.id"
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-        >
-          <img
-            :src="car.imageUrl || '/src/assets/images/gray.avif'"
-            :alt="car.make + ' ' + car.model"
-            class="w-full h-48 object-cover"
-          />
-          <div class="p-4">
-            <div class="flex justify-between items-start mb-2">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ car.make }} {{ car.model }}
-              </h3>
-              <button
-                @click="handleToggleFavorite(car)"
-                class="text-2xl focus:outline-none transition-colors duration-200"
-                :class="{
-                  'text-red-500': car.isFavorite,
-                  'text-gray-400 hover:text-red-500': !car.isFavorite,
-                }"
-              >
-                ♥
-              </button>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ car.year }}</p>
-            <p class="text-lg font-bold text-amber-500 mt-2">{{ car.price }}</p>
-            <div class="flex justify-between items-center mt-4">
-              <button
-                @click="handleDeleteCar(car.id)"
-                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
-              >
-                Delete
-              </button>
-              <button
-                @click="openModal(car)"
-                class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-200"
-              >
-                View Details
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- Modal -->
-    <CarModal v-if="showModal" :selectedProduct="selectedCar" @close-modal="closeModal" />
   </div>
 </template>
+
 <script>
 import { ref, onMounted } from 'vue'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/config/firebase'
 import { updateProfile } from 'firebase/auth'
+import PropertiesList from '../components/Properties.vue'
 import AddCars from './AddCars.vue'
 import FavoritView from './Favorit.vue'
 import PurchaseHistory from '../views/PerchaceHistory.vue'
-import CarModal from '../components/CarsModel.vue'
 import { useToast } from 'vue-toastification'
 import { toggleFavorite, deleteCar } from '@/utils/firebaseUtils'
 import { useRoute } from 'vue-router'
+
 const toast = useToast()
 
 // Example function to upload images to Cloudinary
@@ -254,7 +182,7 @@ export default {
     AddCars,
     FavoritView,
     PurchaseHistory,
-    CarModal,
+    PropertiesList,
   },
   methods: {
     // Delete car from Firestore
@@ -290,7 +218,6 @@ export default {
     const showModal = ref(false)
     const selectedCar = ref(null)
 
-    console.log('router: ', router)
     // Fetch user data from Firestore
     const fetchUserData = async (currentUser) => {
       const docRef = doc(db, 'users', currentUser.uid)
@@ -406,17 +333,6 @@ export default {
       }
     }
 
-    // Open modal with car details
-    const openModal = (car) => {
-      selectedCar.value = car
-      showModal.value = true
-    }
-
-    // Close modal
-    const closeModal = () => {
-      showModal.value = false
-    }
-
     onMounted(async () => {
       const currentUser = auth.currentUser
       if (currentUser) {
@@ -439,8 +355,6 @@ export default {
       showModal,
       selectedCar,
       fetchUserCars,
-      openModal,
-      closeModal,
       uploadProfilePhoto,
       uploadCoverPhoto,
     }
