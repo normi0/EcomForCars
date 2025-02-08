@@ -1,6 +1,6 @@
 // composables/useFetchCars.js
 import { ref } from 'vue'
-import { getDocs, collection, doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase' // Adjust the import path as needed
 import { getAuth } from 'firebase/auth'
 import { useToast } from 'vue-toastification' // Adjust the import path as needed

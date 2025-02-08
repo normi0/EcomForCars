@@ -1,12 +1,10 @@
 <template>
-  <div class="w-full">
-    <div
-      class="md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 flex flex-col items-center md:flex-none"
-    >
+  <div class="container mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8">
       <div
         v-for="product in sortedCars"
         :key="product.id"
-        class="w-full max-w-md xl:max-w-xl bg-white/90 dark:bg-gray-800/50 backdrop-blur rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 shadow-lg hover:shadow-xl"
+        class="bg-white/90 dark:bg-gray-800/50 backdrop-blur rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 shadow-lg"
       >
         <div class="relative">
           <img
@@ -15,7 +13,7 @@
             class="h-64 w-full object-cover"
           />
           <span
-            class="absolute top-4 right-4 bg-amber-500 text-black font-bold px-4 py-1 rounded-full text-sm"
+            class="absolute top-4 right-4 bg-amber-500 text-black font-bold px-4 py-1 rounded-full"
           >
             {{ product.year }}
           </span>
@@ -77,24 +75,22 @@
 
           <p class="text-gray-600 dark:text-gray-300 mb-6">{{ product.description }}</p>
 
-          <div class="flex flex-col gap-2">
+          <div class="flex justify-between items-center">
             <span class="text-2xl font-bold text-gray-900 dark:text-white">{{
               product.price.toLocaleString()
             }}</span>
-            <div class="flex gap-2">
-              <button
-                @click="openPurchaseModal(product)"
-                class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-2 py-4 w-full rounded-xl transition-colors transform hover:scale-105"
-              >
-                View Details
-              </button>
-              <button
-                @click="handleDeleteCar(product.id)"
-                class="bg-red-500 hover:bg-red-600 text-white font-bold px-2 py-4 w-full rounded-xl transition-colors transform hover:scale-105"
-              >
-                Delete Car
-              </button>
-            </div>
+            <button
+              @click="openPurchaseModal(product)"
+              class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
+            >
+              View Details
+            </button>
+            <button
+              @click="deleteCar(product)"
+              class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2 rounded-full transition-colors"
+            >
+              Delete Car
+            </button>
           </div>
         </div>
       </div>
@@ -304,10 +300,9 @@
 </template>
 
 <script>
-import { deleteCar, fetchCars } from '@/utils/firebaseUtils'
+import { deleteCar } from '@/utils/firebaseUtils'
 import { useCarFunctions } from '@/utils/useCarFunctions' // Adjust the import path as needed
-import { ref, onMounted } from 'vue'
-import { useToast } from 'vue-toastification'
+import { ref } from 'vue'
 
 export default {
   props: {
@@ -321,8 +316,6 @@ export default {
     },
   },
   setup(props) {
-    const toast = useToast()
-    const cars = ref([])
     const activeTab = ref('details')
     const tabs = [
       { id: 'details', name: 'Vehicle Details' },
@@ -340,29 +333,8 @@ export default {
       calculateMonthlyPayment,
       submitPurchase,
     } = useCarFunctions(ref(props.cars), ref(props.sortBy))
-    onMounted(async () => {
-      try {
-        const fetchedCars = await fetchCars()
-        cars.value = fetchedCars.value
-      } catch (error) {
-        console.error('Error fetching cars:', error)
-        toast.error('Failed to load cars')
-      }
-    })
-    const handleDeleteCar = async (carId) => {
-      try {
-        await deleteCar(carId) // Delete the car and update the user's carReferences
 
-        // Remove the deleted car from the local state
-
-        sortedCars.value = sortedCars.value.filter((car) => car.id !== carId)
-      } catch (error) {
-        console.error('Error deleting car:', error)
-        toast.error('Failed to delete car. Please try again.')
-      }
-    }
     return {
-      handleDeleteCar,
       sortedCars,
       purchaseForm,
       handleToggleFavorite,
